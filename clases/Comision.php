@@ -7,31 +7,28 @@ class Comision
     private PDO $db;
     public function __construct() { $this->db = Database::conectar(); }
 
-    /** Lista las comisiones activas con sus datos relacionados. Filtro opcional. */
+    /**
+     * Lista las comisiones activas usando la VISTA SQL vista_comisiones_completas
+     * (traduce los ids a nombres y ya filtra activo = 1). Filtro de búsqueda opcional.
+     * Es la vista que se muestra en comisiones.php.
+     */
     public function listar(string $filtro = ''): array
     {
-        $sql = "SELECT c.id_comision, c.dia, c.hora_inicio, c.hora_fin,
-                       c.vacantes_disponibles, c.activo,
-                       m.nombre AS materia, d.nombre AS docente,
-                       a.nombre AS aula, a.cupo_maximo, p.nombre AS periodo
-                FROM Comision c
-                JOIN Materia m        ON m.id_materia = c.id_materia
-                JOIN Docente d        ON d.id_docente = c.id_docente
-                JOIN Aula a           ON a.id_aula    = c.id_aula
-                JOIN PeriodoLectivo p ON p.id_periodo = c.id_periodo
-                WHERE c.activo = 1 ";
+        $sql = "SELECT * FROM vista_comisiones_completas ";
         if ($filtro !== '') {
-            $sql .= "AND (m.nombre LIKE :f1 OR d.nombre LIKE :f2 OR a.nombre LIKE :f3 OR c.dia LIKE :f4) ";
-            $sql .= "ORDER BY c.id_comision";
-            $stmt = $this->db->prepare($sql);
+            $sql .= "WHERE materia LIKE :f1 OR docente LIKE :f2 OR aula LIKE :f3 OR dia LIKE :f4 ";
+            $stmt = $this->db->prepare($sql . "ORDER BY id_comision");
             $like = "%$filtro%";
             $stmt->execute(['f1'=>$like,'f2'=>$like,'f3'=>$like,'f4'=>$like]);
             return $stmt->fetchAll();
         }
-        return $this->db->query($sql . "ORDER BY c.id_comision")->fetchAll();
+        return $this->db->query($sql . "ORDER BY id_comision")->fetchAll();
     }
 
-    /** Lista las comisiones de UN docente (para el rol profesor). */
+    /**
+     * Lista las comisiones de UN docente (para el rol profesor).
+     * No usa la vista porque necesita filtrar por id_docente, que la vista no expone.
+     */
     public function listarPorDocente(int $idDocente, string $filtro = ''): array
     {
         $sql = "SELECT c.id_comision, c.dia, c.hora_inicio, c.hora_fin,

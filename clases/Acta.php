@@ -11,23 +11,23 @@ class Acta
     public const TIPOS = ['1er Parcial', '2do Parcial', 'Final',
                           'Recup 1er Parcial', 'Recup 2do Parcial'];
 
-    /** Lista actas con nombre de alumno y materia. Filtro opcional. */
+    /**
+     * Lista actas (para el admin) usando la VISTA SQL vista_notas_alumnos, que ya
+     * cruza Acta + Alumno + Materia. Filtro de búsqueda opcional. Es la vista que
+     * se muestra en notas.php.
+     */
     public function listar(string $filtro = ''): array
     {
-        $base = "SELECT ac.id_acta, al.nombre AS alumno, al.legajo,
-                        m.nombre AS materia, ac.tipo, ac.nota_final, ac.fecha
-                 FROM Acta ac
-                 JOIN Alumno al ON al.id_alumno = ac.id_alumno
-                 JOIN Materia m ON m.id_materia = ac.id_materia ";
+        $sql = "SELECT * FROM vista_notas_alumnos ";
         if ($filtro !== '') {
-            $stmt = $this->db->prepare($base .
-                "WHERE al.nombre LIKE :f1 OR al.legajo LIKE :f2 OR m.nombre LIKE :f3 OR ac.tipo LIKE :f4
-                 ORDER BY ac.fecha DESC LIMIT 200");
+            $stmt = $this->db->prepare($sql .
+                "WHERE alumno LIKE :f1 OR legajo LIKE :f2 OR materia LIKE :f3 OR tipo LIKE :f4
+                 ORDER BY fecha DESC LIMIT 200");
             $like = "%$filtro%";
             $stmt->execute(['f1'=>$like,'f2'=>$like,'f3'=>$like,'f4'=>$like]);
             return $stmt->fetchAll();
         }
-        return $this->db->query($base . "ORDER BY ac.fecha DESC LIMIT 200")->fetchAll();
+        return $this->db->query($sql . "ORDER BY fecha DESC LIMIT 200")->fetchAll();
     }
 
     public function contar(): int
@@ -61,15 +61,17 @@ class Acta
         return $stmt->fetchAll();
     }
 
-    /** Notas de UN alumno específico (para el rol Alumno: ve solo las suyas). */
+    /**
+     * Notas de UN alumno específico (para el rol Alumno: ve solo las suyas).
+     * Usa la VISTA SQL vista_notas_alumnos, que sí expone id_alumno para filtrar.
+     */
     public function listarPorAlumno(int $idAlumno): array
     {
         $stmt = $this->db->prepare(
-            "SELECT m.nombre AS materia, ac.tipo, ac.nota_final, ac.fecha
-             FROM Acta ac
-             JOIN Materia m ON m.id_materia = ac.id_materia
-             WHERE ac.id_alumno = :al
-             ORDER BY m.nombre, ac.fecha");
+            "SELECT materia, tipo, nota_final, fecha
+             FROM vista_notas_alumnos
+             WHERE id_alumno = :al
+             ORDER BY materia, fecha");
         $stmt->execute(['al' => $idAlumno]);
         return $stmt->fetchAll();
     }

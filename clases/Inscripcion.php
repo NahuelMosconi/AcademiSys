@@ -11,40 +11,30 @@ class Inscripcion
     public function __construct() { $this->db = Database::conectar(); }
 
     /**
-     * READ usando una VISTA SQL (vista_inscripciones).
-     * En vez de escribir los 4 JOINs acá, consultamos la vista que ya
-     * los tiene guardados. La vista se crea en sql/01_estructura.sql.
-     * Esto demuestra el uso de vistas: la consulta compleja vive una sola
-     * vez en la base, y desde PHP la usamos como si fuera una tabla.
+     * READ (listado principal, para el admin) usando la VISTA SQL vista_inscripciones.
+     * Los 4 JOINs (Inscripcion + Alumno + Comision + Materia) viven una sola vez en
+     * la base (sql/01_estructura.sql); acá la vista se consulta como si fuera una
+     * tabla, con un filtro opcional de búsqueda. Es la vista que se muestra en
+     * inscripciones.php.
      */
-    public function listarDesdeVista(): array
-    {
-        return $this->db->query(
-            "SELECT * FROM vista_inscripciones ORDER BY fecha DESC LIMIT 200")->fetchAll();
-    }
-
-    /** Lista las inscripciones con datos del alumno, materia, día y estado. */
     public function listar(string $filtro = ''): array
     {
-        $sql = "SELECT i.id_inscripcion, i.fecha, i.estado,
-                       al.nombre AS alumno, al.legajo,
-                       m.nombre  AS materia,
-                       c.dia, c.hora_inicio, c.hora_fin
-                FROM Inscripcion i
-                JOIN Alumno al  ON al.id_alumno = i.id_alumno
-                JOIN Comision c ON c.id_comision = i.id_comision
-                JOIN Materia m  ON m.id_materia = c.id_materia ";
+        $sql = "SELECT * FROM vista_inscripciones ";
         if ($filtro !== '') {
-            $sql .= "WHERE al.nombre LIKE :f1 OR al.legajo LIKE :f2 OR m.nombre LIKE :f3 OR i.estado LIKE :f4 ";
-            $stmt = $this->db->prepare($sql . "ORDER BY i.fecha DESC LIMIT 200");
+            $sql .= "WHERE alumno LIKE :f1 OR legajo LIKE :f2 OR materia LIKE :f3 OR estado LIKE :f4 ";
+            $stmt = $this->db->prepare($sql . "ORDER BY fecha DESC LIMIT 200");
             $like = "%$filtro%";
             $stmt->execute(['f1'=>$like,'f2'=>$like,'f3'=>$like,'f4'=>$like]);
             return $stmt->fetchAll();
         }
-        return $this->db->query($sql . "ORDER BY i.fecha DESC LIMIT 200")->fetchAll();
+        return $this->db->query($sql . "ORDER BY fecha DESC LIMIT 200")->fetchAll();
     }
 
-    /** Lista inscripciones SOLO de las comisiones de un docente (rol profesor). */
+    /**
+     * Lista inscripciones SOLO de las comisiones de un docente (rol profesor).
+     * No usa vista_inscripciones porque esa vista no expone id_docente para filtrar;
+     * acá hace falta la consulta parametrizada por docente.
+     */
     public function listarPorDocente(int $idDocente, string $filtro = ''): array
     {
         $sql = "SELECT i.id_inscripcion, i.fecha, i.estado,

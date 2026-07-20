@@ -69,15 +69,29 @@ class Usuario
         }
     }
 
-    /** Alumnos que todavía NO tienen usuario (para el combo al crear usuario-alumno). */
-    public function alumnosSinUsuario(): array
+    /**
+     * Crea la cuenta de acceso de un docente o alumno DENTRO de una transacción
+     * ya abierta por quien lo llama (Docente::crear / Alumno::crear).
+     * Login por DNI y contraseña inicial = DNI (igual que el resto del sistema).
+     * El rol se resuelve por nombre para no depender de ids fijos.
+     * Así todo docente y todo alumno queda con forma de ingresar apenas se lo da de alta.
+     */
+    public static function provisionarAcceso(PDO $db, string $nombre, string $dni,
+                                             string $email, string $rolNombre,
+                                             ?int $idDocente = null, ?int $idAlumno = null): void
     {
-        return $this->db->query(
-            "SELECT a.id_alumno, a.legajo, a.nombre, a.dni
-             FROM Alumno a
-             WHERE a.activo = 1
-               AND a.id_alumno NOT IN (SELECT id_alumno FROM Usuario WHERE id_alumno IS NOT NULL)
-             ORDER BY a.nombre")->fetchAll();
+        $r = $db->prepare("SELECT id_rol FROM Rol WHERE nombre = :n");
+        $r->execute(['n' => $rolNombre]);
+        $idRol = (int) $r->fetchColumn();
+        if ($idRol <= 0) {
+            throw new RuntimeException("No existe el rol '$rolNombre'. ¿Ejecutaste 01_estructura.sql?");
+        }
+        $hash = password_hash($dni, PASSWORD_DEFAULT);   // contraseña inicial = DNI
+        $stmt = $db->prepare(
+            "INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente, id_alumno)
+             VALUES (:n, :d, :e, :h, :r, :doc, :al)");
+        $stmt->execute(['n'=>$nombre, 'd'=>$dni, 'e'=>$email, 'h'=>$hash,
+                        'r'=>$idRol, 'doc'=>$idDocente, 'al'=>$idAlumno]);
     }
 
     /** Baja lógica de un usuario. */
@@ -101,8 +115,11 @@ class Usuario
         if (!$hashActual || !password_verify($actual, $hashActual)) {
             return [false, 'La contraseña actual no es correcta.'];
         }
-        if (strlen($nueva) < 4) {
-            return [false, 'La nueva contraseña es demasiado corta.'];
+        if (strlen($nueva) < 8) {
+            return [false, 'La nueva contraseña debe tener al menos 8 caracteres.'];
+        }
+        if ($nueva === $actual) {
+            return [false, 'La nueva contraseña no puede ser igual a la actual.'];
         }
         $nuevoHash = password_hash($nueva, PASSWORD_DEFAULT);
         $up = $this->db->prepare("UPDATE Usuario SET password_hash = :h WHERE id_usuario = :id");

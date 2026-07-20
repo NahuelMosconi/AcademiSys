@@ -518,3 +518,25 @@ CREATE OR REPLACE VIEW vista_comisiones_completas AS
     JOIN Aula           a ON a.id_aula    = c.id_aula
     JOIN PeriodoLectivo p ON p.id_periodo = c.id_periodo
     WHERE c.activo = 1;               -- solo comisiones activas
+
+
+-- ============================================================
+--  DATOS BASE MÍNIMOS
+--  No es "carga de datos" de prueba: es lo imprescindible para que
+--  el sistema arranque. Sin los roles nadie puede tener un rol, y sin
+--  un administrador inicial nadie podría entrar a crear el resto.
+--  El alta de docentes y alumnos (desde la app) crea su cuenta sola.
+-- ============================================================
+
+-- Los 3 roles del sistema. El orden fija los ids: 1=Administrador, 2=Profesor, 3=Alumno.
+INSERT INTO Rol (nombre) VALUES
+    ('Administrador'),
+    ('Profesor'),
+    ('Alumno');
+
+-- Administrador inicial. Login por DNI. Contraseña inicial = DNI (10000000).
+-- El password_hash es el resultado de password_hash('10000000', PASSWORD_DEFAULT).
+-- Se puede cambiar después desde "Mi perfil".
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol) VALUES
+    ('Administrador', '10000000', 'admin@academisys.edu',
+     '$2y$12$BEvH4QXhB8RkmRlk0ATBOemu0Ob/npbZ1Ko0x7i/cxiadK3AzFu9a', 1);

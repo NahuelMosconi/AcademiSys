@@ -2,20 +2,30 @@
   ACADEMISYS - Credenciales (login por DNI)
 =================================================
 El usuario y la contraseña inicial es el DNI.
-Cada usuario puede cambiar su contraseña desde "Mi perfil".
+Cada usuario puede cambiar su contraseña desde "Mi perfil"
+(mínimo 8 caracteres).
 
-ADMINISTRADOR
+ADMINISTRADOR (único usuario que existe al instalar)
   DNI / contraseña:  10000000
 
-PROFESORES (vinculados a un docente)
-  DNI / contraseña:  20000000  (Docente Uno)
-  DNI / contraseña:  20000053  (Docente Dos)
-
-ALUMNO (vinculado a un alumno, ve solo lo suyo)
-  DNI / contraseña:  38000000  (Rodrigo Ramírez)
 =================================================
-El admin crea nuevos usuarios desde "Usuarios":
-- Rol Profesor -> se vincula a un docente
-- Rol Alumno   -> se vincula a un alumno (su carrera ya está asignada)
-La contraseña inicial siempre es el DNI de la persona.
+El resto de las cuentas se crean desde la aplicación:
+
+- Al dar de alta un DOCENTE (pantalla "Docentes"), el sistema
+  le crea automáticamente su cuenta con rol Profesor.
+  Ingresa con su DNI (contraseña inicial = DNI).
+
+- Al dar de alta un ALUMNO (pantalla "Alumnos"), el sistema
+  le crea automáticamente su cuenta con rol Alumno.
+  Ingresa con su DNI (contraseña inicial = DNI).
+
+- La pantalla "Usuarios" solo se usa para crear más
+  ADMINISTRADORES y para dar de baja cuentas.
+
+Ejemplo de circuito:
+  1) El admin da de alta al docente y al alumno.
+  2) El admin crea la comisión (materia + ese docente) e
+     inscribe al alumno.
+  3) El docente entra con su DNI y le carga la nota.
+  4) El alumno entra con su DNI y ve su materia y su nota.
 =================================================

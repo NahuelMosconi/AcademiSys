@@ -1,9 +1,12 @@
 <?php
 require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/Usuario.php';
 
 /**
  * Clase Alumno — CRUD con baja lógica.
  * Campos: legajo, nombre, dni, telefono, email (todos únicos salvo nombre).
+ * Al dar de alta un alumno se le crea automáticamente su cuenta de acceso
+ * (rol Alumno, login y contraseña iniciales = DNI), para que pueda ingresar.
  */
 class Alumno
 {
@@ -60,28 +63,71 @@ class Alumno
         return $stmt->fetch() ?: null;
     }
 
-    /** CREATE — Inserta un alumno. Los UNIQUE (legajo, dni, tel, email) evitan duplicados. */
+    /**
+     * CREATE — Inserta un alumno Y su cuenta de acceso, todo en una transacción.
+     * Los UNIQUE (legajo, dni, tel, email) evitan duplicados. Si algo falla se
+     * revierte todo y se relanza la excepción para que la vista muestre el motivo.
+     */
     public function crear(string $legajo, string $nombre, string $dni, string $tel, string $email, int $idCarrera): bool
     {
-        $stmt = $this->db->prepare(
-            "INSERT INTO Alumno (legajo, nombre, dni, telefono, email, id_carrera)
-             VALUES (:l, :n, :d, :t, :e, :c)");
-        return $stmt->execute(['l'=>$legajo, 'n'=>$nombre, 'd'=>$dni, 't'=>$tel, 'e'=>$email, 'c'=>$idCarrera]);
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT INTO Alumno (legajo, nombre, dni, telefono, email, id_carrera)
+                 VALUES (:l, :n, :d, :t, :e, :c)");
+            $stmt->execute(['l'=>$legajo, 'n'=>$nombre, 'd'=>$dni, 't'=>$tel, 'e'=>$email, 'c'=>$idCarrera]);
+            $idAlumno = (int) $this->db->lastInsertId();
+            // Cuenta de acceso del alumno (rol Alumno). Ya puede ingresar con su DNI.
+            Usuario::provisionarAcceso($this->db, $nombre, $dni, $email, 'Alumno', null, $idAlumno);
+            $this->db->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->db->rollBack();
+            throw $e;   // la vista (alumno_form.php) traduce el mensaje
+        }
     }
 
-    /** UPDATE — Modifica un alumno existente. */
+    /**
+     * UPDATE — Modifica un alumno existente y mantiene sincronizada su cuenta de
+     * acceso (nombre, DNI y email), para que el login por DNI no se rompa si el
+     * admin corrige esos datos. No toca la contraseña ya elegida por el alumno.
+     */
     public function actualizar(int $id, string $legajo, string $nombre, string $dni, string $tel, string $email, int $idCarrera): bool
     {
-        $stmt = $this->db->prepare(
-            "UPDATE Alumno SET legajo=:l, nombre=:n, dni=:d, telefono=:t, email=:e, id_carrera=:c
-             WHERE id_alumno=:id");
-        return $stmt->execute(['l'=>$legajo, 'n'=>$nombre, 'd'=>$dni, 't'=>$tel, 'e'=>$email, 'c'=>$idCarrera, 'id'=>$id]);
+        $this->db->beginTransaction();
+        try {
+            $this->db->prepare(
+                "UPDATE Alumno SET legajo=:l, nombre=:n, dni=:d, telefono=:t, email=:e, id_carrera=:c
+                 WHERE id_alumno=:id")
+                ->execute(['l'=>$legajo, 'n'=>$nombre, 'd'=>$dni, 't'=>$tel, 'e'=>$email, 'c'=>$idCarrera, 'id'=>$id]);
+            $this->db->prepare(
+                "UPDATE Usuario SET nombre=:n, dni=:d, email=:e WHERE id_alumno=:id")
+                ->execute(['n'=>$nombre, 'd'=>$dni, 'e'=>$email, 'id'=>$id]);
+            $this->db->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->db->rollBack();
+            throw $e;   // la vista (alumno_form.php) traduce el mensaje
+        }
     }
 
-    /** DELETE lógico — marca inactivo (conserva el historial). */
+    /**
+     * DELETE lógico — marca inactivo (conserva el historial) y desactiva su cuenta
+     * de acceso para que no pueda seguir ingresando.
+     */
     public function darDeBaja(int $id): bool
     {
-        $stmt = $this->db->prepare("UPDATE Alumno SET activo = 0 WHERE id_alumno = :id");
-        return $stmt->execute(['id' => $id]);
+        $this->db->beginTransaction();
+        try {
+            $this->db->prepare("UPDATE Alumno SET activo = 0 WHERE id_alumno = :id")
+                     ->execute(['id' => $id]);
+            $this->db->prepare("UPDATE Usuario SET activo = 0 WHERE id_alumno = :id")
+                     ->execute(['id' => $id]);
+            $this->db->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
     }
 }
