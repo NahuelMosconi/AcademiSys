@@ -5,9 +5,12 @@
 // ============================================================
 require_once __DIR__ . '/../config/sesion.php';
 requerirRol(['Administrador']);
-require_once __DIR__ . '/_header.php';
 require_once __DIR__ . '/../clases/Alumno.php';
 require_once __DIR__ . '/../clases/Carrera.php';
+// IMPORTANTE: NO incluimos _header.php todavía. Primero procesamos el formulario,
+// porque si guarda bien hacemos un header('Location: ...') para volver al listado,
+// y eso solo funciona si aún no se envió NADA de HTML. El header se incluye más
+// abajo, recién antes de imprimir la página.
 
 $alumnoModel = new Alumno();
 $error = '';
@@ -49,6 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Ya pasó la posible redirección: ahora sí imprimimos la página (sidebar + form).
+require_once __DIR__ . '/_header.php';
 ?>
 <div class="encabezado-pagina"><h1><?= $id > 0 ? 'Editar' : 'Nuevo' ?> alumno</h1></div>
 <a href="alumnos.php" class="boton boton-gris"><?= icono('volver') ?>Volver</a>
