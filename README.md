@@ -44,9 +44,14 @@ Hecho en PHP (POO + MVC) y MySQL, con acceso a datos vía PDO y consultas prepar
 ## Qué cubre
 
 - **DDL:** CREATE DATABASE, 14 tablas, PK/FK, tipos de datos.
-- **Procedimientos y triggers:** `RegistrarNota`, `InscribirAlumno`,
-  `AnularInscripcion`; trigger de auditoría de notas y trigger que valida el
+- **Procedimientos, función y triggers:** `RegistrarNota`, `InscribirAlumno`,
+  `AnularInscripcion`; función `fn_estado_materia` (estado de la materia según el
+  régimen de la Universidad Champagnat: Aprobada / Promocionada / Regular /
+  Libre); trigger de auditoría de notas y trigger que valida horario y
   solapamiento de aula/docente al crear comisiones; índices.
+- **Carreras y régimen UCh:** 7 carreras reales de la Universidad Champagnat con
+  su plan de estudios (materias y correlativas); las correlativas se exigen
+  "regularizadas" para cursar, y la promoción necesita promedio ≥ 7 + TP.
 - **Vistas SQL:** `vista_inscripciones`, `vista_notas_alumnos` y
   `vista_comisiones_completas`, que el PHP consume directamente en los listados.
 - **Seguridad y arquitectura:** login, roles, `password_hash`, sesiones con

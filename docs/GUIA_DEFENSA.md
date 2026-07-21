@@ -58,7 +58,9 @@ la cláusula `COMMENT`).
 - **SQL:** buscar `[PROCEDIMIENTO: InscribirAlumno]`.
 - **Qué hace:** valida **3 reglas** y, si pasan todas, hace una **transacción ACID**:
   1. **Regla 1 – Cupo:** no superar `cupo_maximo` del aula (cuenta inscriptos ACTIVOS).
-  2. **Regla 2 – Correlativas:** tener `Final >= 4` en todas las materias previas.
+  2. **Regla 2 – Correlativas (régimen UCh):** tener cada materia previa
+     **REGULARIZADA** (estado Regular, Promocionada o Aprobada), calculado con
+     `fn_estado_materia`.
   3. **Regla 3 – Solapamiento:** no chocar con otra materia el mismo día/horario.
   - Si pasa todo: `INSERT` en `Inscripcion` + descuenta vacante + inserta en
     `AuditoriaInscripcion` (con IP). Los tres, atómicos (todo o nada).
@@ -70,6 +72,23 @@ la cláusula `COMMENT`).
 - **Qué hace:** marca la inscripción como `ANULADA` (no borra) y **devuelve la vacante**.
 - **Se llama desde:** `clases/Inscripcion.php → anular()`.
 - **Pantalla:** `vistas/inscripciones.php`.
+
+---
+
+## 3.bis Mapa de FUNCIONES
+
+Una **función** almacenada devuelve UN valor (a diferencia del procedimiento). Se
+usa dentro de un `SELECT`/`WHERE` o de otro procedimiento.
+
+### `fn_estado_materia(id_alumno, id_materia)` — estado régimen UCh
+- **SQL:** buscar `[FUNCION: fn_estado_materia]`.
+- **Devuelve:** `'Aprobada'` (Final ≥ 4), `'Promocionada'` (parciales + TP ≥ 4 y
+  promedio de parciales ≥ 7), `'Regular'` (parciales + TP ≥ 4) o `'Libre'`.
+- **La usan:**
+  - el **motor** `InscribirAlumno` para las correlativas (ver 3.2), y
+  - `clases/Acta.php → estadoPorAlumno()` (buscar `[USA FUNCIÓN SQL: fn_estado_materia]`),
+    que alimenta la pantalla `vistas/mis_notas.php` ("Estado de mis materias").
+- En phpMyAdmin la ves en **Rutinas** (tiene su `COMMENT`).
 
 ---
 

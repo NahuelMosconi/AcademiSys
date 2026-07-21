@@ -9,21 +9,22 @@ ADMINISTRADOR (existe siempre, lo crea 01_estructura.sql)
   DNI / contraseña:  10000000
 
 -------------------------------------------------
-Si además cargaste los datos de ejemplo (sql/02_datos.sql),
+Si además cargaste los datos de la UCh (sql/02_datos.sql),
 podés entrar con cualquiera de estos (usuario y clave = DNI):
 
   PROFESORES
-    20000001  (Laura Gómez     - Intro a la Programación, Desarrollo Web)
-    20000005  (Sofía Ramírez   - Análisis de Sistemas I y II)
-    20000006  (Javier López    - Redes)
+    20000001  (Laura Gómez)
+    20000002  (Martín Pérez)
+    20000003  (Ana Torres)
 
   ALUMNOS
-    38000001  (Rodrigo Ramírez - Programación, con notas y finales)
-    38000008  (Florencia Vega  - Análisis de Sistemas)
-    38000013  (Bruno Sosa      - Redes)
+    38000001  (Rodrigo Ramírez - Analista Programador; tiene notas:
+               Algoritmos I "Promocionada", Programación I "Regular")
+    38000002  (Camila Suárez   - Analista Programador; Programación I
+               "Aprobada" por final, Algoritmos I "Libre")
 
-  (Hay 6 profesores -20000001 a 20000006- y 15 alumnos
-   -38000001 a 38000015-. Todos entran con su DNI.)
+  (Hay 12 profesores -20000001 a 20000012- y 14 alumnos
+   -38000001 a 38000014-. Todos entran con su DNI.)
 -------------------------------------------------
 
 =================================================

@@ -21,14 +21,16 @@ if ($esAlumno && $u['id_alumno']):
     $al = (int)$u['id_alumno'];
     $misMaterias = (int)$db->query("SELECT COUNT(*) FROM Inscripcion WHERE id_alumno=$al AND estado='ACTIVA'")->fetchColumn();
     $misNotas = (int)$db->query("SELECT COUNT(*) FROM Acta WHERE id_alumno=$al")->fetchColumn();
-    $finales = (int)$db->query("SELECT COUNT(*) FROM Acta WHERE id_alumno=$al AND tipo='Final' AND nota_final>=4")->fetchColumn();
+    // Materias aprobadas según el régimen UCh: por Final o por Promoción (usa fn_estado_materia).
+    $finales = (int)$db->query("SELECT COUNT(*) FROM (SELECT DISTINCT id_materia FROM Acta WHERE id_alumno=$al) t
+        WHERE fn_estado_materia($al, t.id_materia) COLLATE utf8mb4_unicode_ci IN ('Aprobada','Promocionada')")->fetchColumn();
     $carrera = $db->query("SELECT c.nombre FROM Alumno a JOIN Carrera c ON c.id_carrera=a.id_carrera WHERE a.id_alumno=$al")->fetchColumn();
 ?>
 <div class="ayuda">Carrera: <strong><?= htmlspecialchars($carrera ?: 'sin asignar') ?></strong></div>
 <div class="tarjetas">
     <div class="tarjeta"><div class="ico-card ico-azul"><?= icono('calendario') ?></div><h3>Materias cursando</h3><p class="numero"><?= $misMaterias ?></p></div>
     <div class="tarjeta"><div class="ico-card ico-rojo"><?= icono('documento') ?></div><h3>Notas registradas</h3><p class="numero"><?= $misNotas ?></p></div>
-    <div class="tarjeta"><div class="ico-card ico-verde"><?= icono('check') ?></div><h3>Finales aprobados</h3><p class="numero"><?= $finales ?></p></div>
+    <div class="tarjeta"><div class="ico-card ico-verde"><?= icono('check') ?></div><h3>Materias aprobadas</h3><p class="numero"><?= $finales ?></p></div>
 </div>
 <?php elseif ($esProfesor && $u['id_docente']):
     $doc = (int)$u['id_docente'];
