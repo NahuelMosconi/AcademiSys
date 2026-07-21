@@ -105,6 +105,18 @@ class Inscripcion
      */
     public function inscribir(int $idAlumno, int $idComision, string $ip): array
     {
+        // Pre-chequeo de "ya inscripto": si el alumno ya tiene una inscripción ACTIVA
+        // en ESTA comisión, avisamos con un mensaje preciso. Si no lo hiciéramos acá,
+        // el motor lo detectaría como un solapamiento horario consigo mismo (misma
+        // materia, mismo día/hora) y mostraría un cartel equivocado.
+        $ya = $this->db->prepare(
+            "SELECT COUNT(*) FROM Inscripcion
+             WHERE id_alumno = :a AND id_comision = :c AND estado = 'ACTIVA'");
+        $ya->execute(['a' => $idAlumno, 'c' => $idComision]);
+        if ((int)$ya->fetchColumn() > 0) {
+            return [false, 'Ya estás inscripto en esa comisión.'];
+        }
+
         try {
             // ===== [USA PROCEDIMIENTO ALMACENADO: InscribirAlumno] =====
             // El "motor": valida cupo/correlativas/solapamiento y hace la
@@ -116,15 +128,20 @@ class Inscripcion
             // El procedimiento lanza el motivo del rechazo en el mensaje de error.
             $motivo = $e->getMessage();
 
-            // Si el mensaje es el nombre de una materia, es por correlativas.
             if (strpos($motivo, 'cupo') !== false) {
                 return [false, 'No hay cupo disponible: el aula está llena.'];
+            }
+            // Comisión de un ciclo lectivo cerrado (se chequea antes que correlativas
+            // para no confundir el motivo real del rechazo).
+            if (strpos($motivo, 'cerrado') !== false) {
+                return [false, 'No te podés inscribir: la comisión es de un ciclo lectivo cerrado.'];
             }
             if (strpos($motivo, 'día y horario') !== false || strpos($motivo, 'horario') !== false) {
                 return [false, 'Solapamiento: ya tenés otra materia ese día y horario.'];
             }
+            // Reinscripción en una comisión que ya tenía (viola el UNIQUE uk_inscripcion).
             if (strpos($motivo, 'ya estaba') !== false || strpos($motivo, 'Duplicate') !== false) {
-                return [false, 'El alumno ya está inscripto en esa comisión.'];
+                return [false, 'Ya estás inscripto en esa comisión.'];
             }
             // El SP devuelve el nombre de la materia que falta como mensaje
             // cuando son correlativas. Limpiamos el prefijo técnico de PDO.
