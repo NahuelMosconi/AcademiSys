@@ -113,9 +113,63 @@ class Comision
         }
     }
 
+    /** READ — Busca una comisión por id (para editar). */
+    public function buscar(int $id): ?array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM Comision WHERE id_comision = :id");
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch() ?: null;
+    }
+
     /**
-     * Baja lógica de una comisión. NO permite si tiene inscriptos activos (integridad).
-     * Devuelve [exito, mensaje].
+     * UPDATE — Modifica una comisión (siempre permitido, aunque tenga inscriptos).
+     * El trigger tr_validar_comision solo actúa en el INSERT, así que acá validamos
+     * a mano: horario coherente y que no se pisen aula ni docente (excluyendo la
+     * propia comisión). Recalcula las vacantes según el cupo del aula y los
+     * inscriptos activos. Devuelve [exito, mensaje].
+     */
+    public function actualizar(int $id, int $idMateria, int $idDocente, int $idAula, int $idPeriodo,
+                               string $dia, string $horaInicio, string $horaFin): array
+    {
+        if ($horaInicio >= $horaFin) {
+            return [false, 'La hora de inicio debe ser anterior a la hora de fin.'];
+        }
+        // Choque de AULA (excluye esta misma comisión).
+        $qa = $this->db->prepare(
+            "SELECT COUNT(*) FROM Comision WHERE activo=1 AND id_comision<>:id
+             AND id_aula=:a AND dia=:dia AND hora_inicio < :hf AND hora_fin > :hi");
+        $qa->execute(['id'=>$id,'a'=>$idAula,'dia'=>$dia,'hf'=>$horaFin,'hi'=>$horaInicio]);
+        if ((int)$qa->fetchColumn() > 0) {
+            return [false, 'El aula ya está ocupada ese día y horario.'];
+        }
+        // Choque de DOCENTE (excluye esta misma comisión).
+        $qd = $this->db->prepare(
+            "SELECT COUNT(*) FROM Comision WHERE activo=1 AND id_comision<>:id
+             AND id_docente=:d AND dia=:dia AND hora_inicio < :hf AND hora_fin > :hi");
+        $qd->execute(['id'=>$id,'d'=>$idDocente,'dia'=>$dia,'hf'=>$horaFin,'hi'=>$horaInicio]);
+        if ((int)$qd->fetchColumn() > 0) {
+            return [false, 'El docente ya tiene otra clase ese día y horario.'];
+        }
+        // Recalcular vacantes = cupo del aula - inscriptos activos (por si cambió el aula).
+        $cupo = $this->db->prepare("SELECT cupo_maximo FROM Aula WHERE id_aula=:a");
+        $cupo->execute(['a'=>$idAula]);
+        $cupoMax = (int)$cupo->fetchColumn();
+        $ins = $this->db->prepare("SELECT COUNT(*) FROM Inscripcion WHERE id_comision=:id AND estado='ACTIVA'");
+        $ins->execute(['id'=>$id]);
+        $vac = max(0, $cupoMax - (int)$ins->fetchColumn());
+
+        $stmt = $this->db->prepare(
+            "UPDATE Comision SET id_materia=:m, id_docente=:d, id_aula=:a, id_periodo=:p,
+                    dia=:dia, hora_inicio=:hi, hora_fin=:hf, vacantes_disponibles=:vac
+             WHERE id_comision=:id");
+        $stmt->execute(['m'=>$idMateria,'d'=>$idDocente,'a'=>$idAula,'p'=>$idPeriodo,
+            'dia'=>$dia,'hi'=>$horaInicio,'hf'=>$horaFin,'vac'=>$vac,'id'=>$id]);
+        return [true, 'Comisión modificada correctamente.'];
+    }
+
+    /**
+     * DELETE lógico de una comisión. NO permite eliminar si tiene alumnos
+     * inscriptos activos (integridad). Devuelve [exito, mensaje].
      */
     public function darDeBaja(int $id): array
     {
@@ -123,10 +177,10 @@ class Comision
             "SELECT COUNT(*) FROM Inscripcion WHERE id_comision = :id AND estado='ACTIVA'");
         $chk->execute(['id' => $id]);
         if ((int)$chk->fetchColumn() > 0) {
-            return [false, 'No se puede dar de baja: la comisión tiene alumnos inscriptos activos.'];
+            return [false, 'No se puede eliminar: la comisión tiene alumnos inscriptos activos.'];
         }
         $stmt = $this->db->prepare("UPDATE Comision SET activo = 0 WHERE id_comision = :id");
         $stmt->execute(['id' => $id]);
-        return [true, 'Comisión dada de baja.'];
+        return [true, 'Comisión eliminada.'];
     }
 }

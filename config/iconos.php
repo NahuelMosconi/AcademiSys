@@ -19,6 +19,7 @@ function icono(string $nombre, string $clase = ''): string
         'alumno'      => '<path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.6 2.7 3 6 3s6-1.4 6-3v-4.5"/><path d="M22 9v5"/>',
         'docente'     => '<rect x="3" y="3.5" width="18" height="12" rx="2"/><path d="M12 15.5V18"/><path d="M8 21l4-3 4 3"/>',
         'materia'     => '<path d="M6 3h12a1 1 0 0 1 1 1v14H8a2 2 0 0 0-2 2z"/><path d="M6 18a2 2 0 0 0 2 2h11"/><path d="M9 7h7"/>',
+        'carrera'     => '<path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M7 10.5V15c0 1.5 2.2 2.5 5 2.5s5-1 5-2.5v-4.5"/><path d="M21 8v5"/>',
         'comision'    => '<path d="M4 21V8l8-4 8 4v13"/><path d="M3 21h18"/><rect x="10" y="14" width="4" height="7"/><path d="M8 9.5h0M16 9.5h0M8 12.5h0M16 12.5h0"/>',
         'auditoria'   => '<path d="M12 3 19 6v5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/>',
         'usuarios'    => '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.2a3.2 3.2 0 0 1 0 5.6"/><path d="M16.5 15.1A5.5 5.5 0 0 1 20.5 20"/>',

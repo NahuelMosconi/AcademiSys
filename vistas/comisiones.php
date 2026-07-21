@@ -1,7 +1,9 @@
 <?php
 // ============================================================
-//  Pantalla de Comisiones (solo Administrador). Crea comisiones (un trigger en
-//  la base valida que no se solapen aula ni docente) y las lista con buscador.
+//  Pantalla de Comisiones (solo Administrador). Alta, edición y baja de
+//  comisiones. Al crear, un trigger valida horario y solapamiento de aula/docente;
+//  al editar, la validación equivalente se hace en la clase Comision.
+//  La baja NO se permite si la comisión tiene alumnos inscriptos activos.
 // ============================================================
 require_once __DIR__ . '/../config/sesion.php';
 requerirRol(['Administrador']);
@@ -15,8 +17,14 @@ require_once __DIR__ . '/../clases/PeriodoLectivo.php';
 $comisionModel = new Comision();
 $mensaje = ''; $tipo = '';
 
-// ----- Alta de comisión (el trigger de la base valida solapamientos) -----
+// ¿Editando? (link "Editar" -> ?editar=id). Prefill del formulario.
+$editId = (int)($_GET['editar'] ?? 0);
+$datos = ['id_comision'=>0,'id_materia'=>'','id_docente'=>'','id_aula'=>'','id_periodo'=>'','dia'=>'','hora_inicio'=>'','hora_fin'=>''];
+if ($editId > 0) { $e = $comisionModel->buscar($editId); if ($e) $datos = $e; }
+
+// ----- Alta o edición (el mismo formulario; si trae id oculto, es edición) -----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id        = (int) ($_POST['id_comision'] ?? 0);
     $idMateria = (int) ($_POST['id_materia'] ?? 0);
     $idDocente = (int) ($_POST['id_docente'] ?? 0);
     $idAula    = (int) ($_POST['id_aula'] ?? 0);
@@ -25,14 +33,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $hi        = $_POST['hora_inicio'] ?? '';
     $hf        = $_POST['hora_fin'] ?? '';
     if ($idMateria && $idDocente && $idAula && $idPeriodo && $dia && $hi && $hf) {
-        [$ok, $mensaje] = $comisionModel->crear($idMateria, $idDocente, $idAula, $idPeriodo, $dia, $hi, $hf);
+        if ($id > 0) [$ok, $mensaje] = $comisionModel->actualizar($id, $idMateria, $idDocente, $idAula, $idPeriodo, $dia, $hi, $hf);
+        else         [$ok, $mensaje] = $comisionModel->crear($idMateria, $idDocente, $idAula, $idPeriodo, $dia, $hi, $hf);
         $tipo = $ok ? 'exito' : 'error';
+        if ($ok) { $datos = ['id_comision'=>0,'id_materia'=>'','id_docente'=>'','id_aula'=>'','id_periodo'=>'','dia'=>'','hora_inicio'=>'','hora_fin'=>'']; }
+        else     { $datos = ['id_comision'=>$id,'id_materia'=>$idMateria,'id_docente'=>$idDocente,'id_aula'=>$idAula,'id_periodo'=>$idPeriodo,'dia'=>$dia,'hora_inicio'=>$hi,'hora_fin'=>$hf]; }
     } else {
         $mensaje = 'Completá todos los campos.'; $tipo = 'error';
     }
 }
-if (isset($_GET['baja'])) {
-    [$ok, $mensaje] = $comisionModel->darDeBaja((int) $_GET['baja']);
+// ----- Eliminar (baja lógica con control de integridad) -----
+if (isset($_GET['eliminar'])) {
+    [$ok, $mensaje] = $comisionModel->darDeBaja((int) $_GET['eliminar']);
     $tipo = $ok ? 'exito' : 'error';
 }
 
@@ -42,6 +54,9 @@ $materias = (new Materia())->listarParaCombo();
 $docentes = (new Docente())->listar();
 $aulas    = (new Aula())->listar();
 $periodos = (new PeriodoLectivo())->listar();
+$editando = ((int)($datos['id_comision'] ?? 0)) > 0;
+$hIni = $datos['hora_inicio'] ? substr($datos['hora_inicio'],0,5) : '';
+$hFin = $datos['hora_fin'] ? substr($datos['hora_fin'],0,5) : '';
 ?>
 
 <div class="encabezado-pagina"><h1>Comisiones</h1><p>Dictado de materias con docente, aula, período y horario.</p></div>
@@ -51,31 +66,33 @@ $periodos = (new PeriodoLectivo())->listar();
 <?php endif; ?>
 
 <div class="tarjeta-form">
-<h2>Crear comisión</h2>
+<h2><?= $editando ? 'Editar comisión' : 'Crear comisión' ?></h2>
 <form method="POST" class="formulario form-grid">
+    <input type="hidden" name="id_comision" value="<?= (int)$datos['id_comision'] ?>">
     <div><label>Materia</label>
     <select name="id_materia" required><option value="">--</option>
-        <?php foreach ($materias as $m): ?><option value="<?= (int)$m['id_materia'] ?>"><?= htmlspecialchars($m['nombre']) ?></option><?php endforeach; ?>
+        <?php foreach ($materias as $m): ?><option value="<?= (int)$m['id_materia'] ?>" <?= ($datos['id_materia']==$m['id_materia'])?'selected':'' ?>><?= htmlspecialchars($m['nombre']) ?></option><?php endforeach; ?>
     </select></div>
     <div><label>Docente</label>
     <select name="id_docente" required><option value="">--</option>
-        <?php foreach ($docentes as $d): ?><option value="<?= (int)$d['id_docente'] ?>"><?= htmlspecialchars($d['nombre']) ?></option><?php endforeach; ?>
+        <?php foreach ($docentes as $d): ?><option value="<?= (int)$d['id_docente'] ?>" <?= ($datos['id_docente']==$d['id_docente'])?'selected':'' ?>><?= htmlspecialchars($d['nombre']) ?></option><?php endforeach; ?>
     </select></div>
     <div><label>Aula</label>
     <select name="id_aula" required><option value="">--</option>
-        <?php foreach ($aulas as $a): ?><option value="<?= (int)$a['id_aula'] ?>"><?= htmlspecialchars($a['nombre']) ?> (cupo <?= (int)$a['cupo_maximo'] ?>)</option><?php endforeach; ?>
+        <?php foreach ($aulas as $a): ?><option value="<?= (int)$a['id_aula'] ?>" <?= ($datos['id_aula']==$a['id_aula'])?'selected':'' ?>><?= htmlspecialchars($a['nombre']) ?> (cupo <?= (int)$a['cupo_maximo'] ?>)</option><?php endforeach; ?>
     </select></div>
     <div><label>Período</label>
     <select name="id_periodo" required><option value="">--</option>
-        <?php foreach ($periodos as $p): ?><option value="<?= (int)$p['id_periodo'] ?>"><?= htmlspecialchars($p['nombre']) ?></option><?php endforeach; ?>
+        <?php foreach ($periodos as $p): ?><option value="<?= (int)$p['id_periodo'] ?>" <?= ($datos['id_periodo']==$p['id_periodo'])?'selected':'' ?>><?= htmlspecialchars($p['nombre']) ?></option><?php endforeach; ?>
     </select></div>
     <div><label>Día</label>
     <select name="dia" required>
-        <?php foreach (['Lunes','Martes','Miércoles','Jueves','Viernes'] as $d): ?><option><?= $d ?></option><?php endforeach; ?>
+        <?php foreach (['Lunes','Martes','Miércoles','Jueves','Viernes'] as $d): ?><option <?= ($datos['dia']===$d)?'selected':'' ?>><?= $d ?></option><?php endforeach; ?>
     </select></div>
-    <div><label>Hora inicio</label><input type="time" name="hora_inicio" required></div>
-    <div><label>Hora fin</label><input type="time" name="hora_fin" required></div>
-    <div class="form-full"><button type="submit">Crear comisión</button></div>
+    <div><label>Hora inicio</label><input type="time" name="hora_inicio" value="<?= htmlspecialchars($hIni) ?>" required></div>
+    <div><label>Hora fin</label><input type="time" name="hora_fin" value="<?= htmlspecialchars($hFin) ?>" required></div>
+    <div class="form-full"><button type="submit"><?= $editando ? 'Guardar cambios' : 'Crear comisión' ?></button>
+        <?php if ($editando): ?><a href="comisiones.php" class="limpiar" style="margin-left:12px;">Cancelar</a><?php endif; ?></div>
 </form>
 </div>
 
@@ -88,8 +105,9 @@ $periodos = (new PeriodoLectivo())->listar();
 <div class="tabla-wrap">
 <table class="tabla">
     <thead><tr><th>ID</th><th>Materia</th><th>Docente</th><th>Aula</th>
-        <th>Día / Horario</th><th>Vacantes</th><th>Acción</th></tr></thead>
+        <th>Día / Horario</th><th>Vacantes</th><th>Acciones</th></tr></thead>
     <tbody>
+        <?php if (empty($comisiones)): ?><tr><td colspan="7" style="text-align:center;color:#9ca3af;">Sin resultados.</td></tr><?php endif; ?>
         <?php foreach ($comisiones as $c): ?>
             <tr>
                 <td><?= (int) $c['id_comision'] ?></td>
@@ -99,8 +117,9 @@ $periodos = (new PeriodoLectivo())->listar();
                 <td><?= htmlspecialchars($c['dia']) ?>
                     <?= substr($c['hora_inicio'],0,5) ?>-<?= substr($c['hora_fin'],0,5) ?></td>
                 <td><?= (int) $c['vacantes_disponibles'] ?>/<?= (int) $c['cupo_maximo'] ?></td>
-                <td><a href="comisiones.php?baja=<?= (int)$c['id_comision'] ?>"
-                       onclick="return confirm('¿Dar de baja esta comisión?')">Baja</a></td>
+                <td><a href="comisiones.php?editar=<?= (int)$c['id_comision'] ?>">Editar</a> |
+                    <a href="comisiones.php?eliminar=<?= (int)$c['id_comision'] ?>"
+                       onclick="return confirm('¿Eliminar esta comisión?')">Eliminar</a></td>
             </tr>
         <?php endforeach; ?>
     </tbody>
