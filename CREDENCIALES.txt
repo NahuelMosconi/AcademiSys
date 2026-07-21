@@ -5,8 +5,26 @@ El usuario y la contraseña inicial es el DNI.
 Cada usuario puede cambiar su contraseña desde "Mi perfil"
 (mínimo 8 caracteres).
 
-ADMINISTRADOR (único usuario que existe al instalar)
+ADMINISTRADOR (existe siempre, lo crea 01_estructura.sql)
   DNI / contraseña:  10000000
+
+-------------------------------------------------
+Si además cargaste los datos de ejemplo (sql/02_datos.sql),
+podés entrar con cualquiera de estos (usuario y clave = DNI):
+
+  PROFESORES
+    20000001  (Laura Gómez     - Intro a la Programación, Desarrollo Web)
+    20000005  (Sofía Ramírez   - Análisis de Sistemas I y II)
+    20000006  (Javier López    - Redes)
+
+  ALUMNOS
+    38000001  (Rodrigo Ramírez - Programación, con notas y finales)
+    38000008  (Florencia Vega  - Análisis de Sistemas)
+    38000013  (Bruno Sosa      - Redes)
+
+  (Hay 6 profesores -20000001 a 20000006- y 15 alumnos
+   -38000001 a 38000015-. Todos entran con su DNI.)
+-------------------------------------------------
 
 =================================================
 El resto de las cuentas se crean desde la aplicación:
