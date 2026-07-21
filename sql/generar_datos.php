@@ -194,8 +194,15 @@ $apellidosPool = ['Gómez','Pérez','Torres','Fernández','Ramírez','López','D
   'Domínguez','Suárez','Flores','Acosta','Benítez','Cabrera','Ledesma','Ferreyra','Godoy','Ponce','Vera',
   'Bustos','Correa','Peralta','Quiroga','Miranda','Cardozo','Luna','Ibáñez','Navarro','Campos','Ávila',
   'Cáceres','Maldonado','Figueroa','Villalba','Ojeda','Pereyra'];
-function nombreDe(int $i, array $n, array $a): string {
-    return $n[$i % count($n)] . ' ' . $a[($i * 7 + 3) % count($a)];
+// Genera un nombre completo ÚNICO por cada índice global $k (0,1,2,...).
+// El apellido depende de $k y también de la "vuelta" (cuántas veces se dio la
+// vuelta al pool de nombres), así el par (nombre, apellido) nunca se repite
+// mientras $k < count(nombres) * count(apellidos). Esto evita que un docente y
+// un alumno terminen con el mismo nombre.
+function nombreDe(int $k, array $n, array $a): string {
+    $first = $n[$k % count($n)];
+    $last  = $a[($k * 3 + intdiv($k, count($n))) % count($a)];
+    return "$first $last";
 }
 $NUM_DOCENTES = 20;          // profesores
 $ALUMNOS_POR_CARRERA = 7;    // 7 x 7 carreras = 49 alumnos
