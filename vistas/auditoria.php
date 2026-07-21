@@ -36,7 +36,7 @@ $notas = $db->query(
 
 <h2>Auditoría de inscripciones (con IP de origen)</h2>
 <form method="GET" class="barra-busqueda">
-    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="🔍 Buscar por alumno, materia o IP...">
+    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Buscar por alumno, materia o IP...">
     <button type="submit">Filtrar</button>
     <?php if ($q !== ''): ?><a href="auditoria.php" class="limpiar">Limpiar</a><?php endif; ?>
 </form>

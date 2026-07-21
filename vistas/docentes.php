@@ -47,7 +47,7 @@ $docentes = $docenteModel->listar($q);
 </div>
 
 <form method="GET" class="barra-busqueda">
-    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="🔍 Buscar por nombre, DNI o email...">
+    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Buscar por nombre, DNI o email...">
     <button type="submit">Filtrar</button>
     <?php if ($q !== ''): ?><a href="docentes.php" class="limpiar">Limpiar</a><?php endif; ?>
 </form>

@@ -25,12 +25,12 @@ $alumnos = $alumnoModel->listar($q);
 <div class="encabezado-pagina"><h1>Alumnos</h1><p>Gestión de estudiantes (alta, edición y baja lógica).</p></div>
 <?php if ($mensaje !== ''): ?><p class="aviso <?= $tipo ?>"><?= htmlspecialchars($mensaje) ?></p><?php endif; ?>
 
-<a href="alumno_form.php" class="boton">+ Nuevo alumno</a>
+<a href="alumno_form.php" class="boton"><?= icono('mas') ?>Nuevo alumno</a>
 
 <!-- CUADRO DE BÚSQUEDA -->
 <form method="GET" class="barra-busqueda">
     <input type="text" name="q" value="<?= htmlspecialchars($q) ?>"
-           placeholder="🔍 Buscar por nombre, legajo, DNI, teléfono o email...">
+           placeholder="Buscar por nombre, legajo, DNI, teléfono o email...">
     <button type="submit">Filtrar</button>
     <?php if ($q !== ''): ?><a href="alumnos.php" class="limpiar">Limpiar</a><?php endif; ?>
 </form>

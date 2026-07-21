@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body class="fondo-login">
     <div class="caja-login">
-        <div class="logo-login">🎓</div>
+        <img class="logo-login" src="assets/logo-mark.svg" alt="AcademiSys">
         <h1>Academi<span class="marca-azul">Sys</span></h1>
         <p class="subtitulo">Sistema de Gestión Académica</p>
 

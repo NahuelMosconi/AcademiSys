@@ -11,6 +11,9 @@
 
 USE academisys;
 
+-- Interpretar este archivo como UTF-8 al importar (acentos correctos).
+SET NAMES utf8mb4;
+
 -- Ids de rol resueltos por nombre (no dependemos de ids fijos).
 SET @rol_prof = (SELECT id_rol FROM Rol WHERE nombre = 'Profesor');
 SET @rol_alu  = (SELECT id_rol FROM Rol WHERE nombre = 'Alumno');
@@ -32,49 +35,49 @@ INSERT INTO PeriodoLectivo (id_periodo, nombre, anio) VALUES (2, '2do Cuatrimest
 
 -- ---------- Docentes + su cuenta de acceso (rol Profesor) ----------
 INSERT INTO Docente (id_docente, nombre, dni, email) VALUES (1, 'Laura Gómez', '20000001', 'laura.gomez@academisys.edu');
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Laura Gómez', '20000001', 'laura.gomez@academisys.edu', '$2y$12$9V.UAuIKg3haN0K8bpOBzuB1zhLa/4ybBouJ0pL1ODJ1/8/.uERvW', @rol_prof, 1);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Laura Gómez', '20000001', 'laura.gomez@academisys.edu', '$2y$12$bbjur.YO1l3FV8RE88eVrevJYYcjAagH0lG9oYCyouU1XY38LKRp6', @rol_prof, 1);
 INSERT INTO Docente (id_docente, nombre, dni, email) VALUES (2, 'Martín Pérez', '20000002', 'martin.perez@academisys.edu');
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Martín Pérez', '20000002', 'martin.perez@academisys.edu', '$2y$12$nsnIpts5cydqQJhQb/zbp.GOasj.qrPpIIo58rdMgQ6XRv4fijkbS', @rol_prof, 2);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Martín Pérez', '20000002', 'martin.perez@academisys.edu', '$2y$12$XlEr8I0pZDanAL/ssoYR7OanCoBLKTVGvqxBoH61PZK2fzrM4aBxi', @rol_prof, 2);
 INSERT INTO Docente (id_docente, nombre, dni, email) VALUES (3, 'Ana Torres', '20000003', 'ana.torres@academisys.edu');
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Ana Torres', '20000003', 'ana.torres@academisys.edu', '$2y$12$EMgpofP7d/wvRN7EYgoQ..w8NDy5bu.7JUOcZM96tjmyLgXuj/peu', @rol_prof, 3);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Ana Torres', '20000003', 'ana.torres@academisys.edu', '$2y$12$WvxWWtxuKoUevlhZoQ2GK.NUOAgfot4f34eGcmVZuBATUiFwL4af6', @rol_prof, 3);
 INSERT INTO Docente (id_docente, nombre, dni, email) VALUES (4, 'Diego Fernández', '20000004', 'diego.fernandez@academisys.edu');
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Diego Fernández', '20000004', 'diego.fernandez@academisys.edu', '$2y$12$Y0JhTaL12cuAWRGdPmbtxOkrOsHCy1d44d9eSzIkVBn1nbnUgDJh.', @rol_prof, 4);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Diego Fernández', '20000004', 'diego.fernandez@academisys.edu', '$2y$12$V4lXMf8sOpgVjFb/pNo3e.tKXp8Cl0XPukDDDC04IwaXvSmmp6OnO', @rol_prof, 4);
 INSERT INTO Docente (id_docente, nombre, dni, email) VALUES (5, 'Sofía Ramírez', '20000005', 'sofia.ramirez@academisys.edu');
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Sofía Ramírez', '20000005', 'sofia.ramirez@academisys.edu', '$2y$12$WvwECqsG6rDrnh7x4kN9weBakksZ856edfzCbpIFmDa5Znza4olxC', @rol_prof, 5);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Sofía Ramírez', '20000005', 'sofia.ramirez@academisys.edu', '$2y$12$UDnFByx3nsdctE6dOpYqbeSy0SBQ.gk12H6fq.YHG4/tjN./w7DWa', @rol_prof, 5);
 INSERT INTO Docente (id_docente, nombre, dni, email) VALUES (6, 'Javier López', '20000006', 'javier.lopez@academisys.edu');
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Javier López', '20000006', 'javier.lopez@academisys.edu', '$2y$12$ZR6MvYhB0rbULBHRnvMM7.7BLaml6xq1/q8DhxdgTi46uAHPggIPW', @rol_prof, 6);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ('Javier López', '20000006', 'javier.lopez@academisys.edu', '$2y$12$iSJ4nAeuHXDcH0NTjybnP.RZ/zbk1N1qBMx4RD4GEy9gXNLasKX1m', @rol_prof, 6);
 
 -- ---------- Alumnos + su cuenta de acceso (rol Alumno) ----------
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (1, 'A2025001', 'Rodrigo Ramírez', '38000001', '11-4000-0001', 'rodrigo.ramirez@alumnos.academisys.edu', 1);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Rodrigo Ramírez', '38000001', 'rodrigo.ramirez@alumnos.academisys.edu', '$2y$12$zycNi3BcL7Y5IrMGC34OoO0SJ5ZNQTFrBJsc1WkVGXe/7.rGAuIRa', @rol_alu, 1);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Rodrigo Ramírez', '38000001', 'rodrigo.ramirez@alumnos.academisys.edu', '$2y$12$sjVkXwQ4SpAek4aM.tW43ub2FbJBbxN/.Kt17C/XLUNgAcpaE93D2', @rol_alu, 1);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (2, 'A2025002', 'Camila Suárez', '38000002', '11-4000-0002', 'camila.suarez@alumnos.academisys.edu', 1);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Camila Suárez', '38000002', 'camila.suarez@alumnos.academisys.edu', '$2y$12$BpFTexxh6DwSg9Zdx8F/QOI069xcf7o0TF23vt8t1c3r30IZxlE.G', @rol_alu, 2);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Camila Suárez', '38000002', 'camila.suarez@alumnos.academisys.edu', '$2y$12$eyxfobZ7INfnfKwmGPS9yei2h/qrAymDdWL0ycliAVi9MV4zNzSu6', @rol_alu, 2);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (3, 'A2025003', 'Lucas Molina', '38000003', '11-4000-0003', 'lucas.molina@alumnos.academisys.edu', 1);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Lucas Molina', '38000003', 'lucas.molina@alumnos.academisys.edu', '$2y$12$HHWaFWIEj2HRN4zv3dMG1OR5LVJ.E/za2plVIcKEoR9FbF61W8ASe', @rol_alu, 3);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Lucas Molina', '38000003', 'lucas.molina@alumnos.academisys.edu', '$2y$12$urZCzF4tOnhZW6Jy5cAHdOkVQxf7HbyMgaSF7TcDcvioC2MB9u58u', @rol_alu, 3);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (4, 'A2025004', 'Valentina Ríos', '38000004', '11-4000-0004', 'valentina.rios@alumnos.academisys.edu', 1);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Valentina Ríos', '38000004', 'valentina.rios@alumnos.academisys.edu', '$2y$12$UjfD.7W1l6K/Ciab.2TrKeuLJxTGhNLewG8./QPKh/LEFGGlMZFZu', @rol_alu, 4);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Valentina Ríos', '38000004', 'valentina.rios@alumnos.academisys.edu', '$2y$12$WFCGu75eCtsmLHQIe3ISwejG2j86lOehaYQq0CgPRBi2g.YDkFm/a', @rol_alu, 4);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (5, 'A2025005', 'Mateo Castro', '38000005', '11-4000-0005', 'mateo.castro@alumnos.academisys.edu', 1);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Mateo Castro', '38000005', 'mateo.castro@alumnos.academisys.edu', '$2y$12$.EKN6tuzPMuquJJ4FAzpgO.9CTbSukIaJUQfvpU2Y9xWog9CRjzfW', @rol_alu, 5);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Mateo Castro', '38000005', 'mateo.castro@alumnos.academisys.edu', '$2y$12$740VsbitSvoMXsWPSH7OuOKhnNXr5tHUpKPPyGyeSoC63pkqTB2Ti', @rol_alu, 5);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (6, 'A2025006', 'Julieta Herrera', '38000006', '11-4000-0006', 'julieta.herrera@alumnos.academisys.edu', 1);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Julieta Herrera', '38000006', 'julieta.herrera@alumnos.academisys.edu', '$2y$12$VXf/ZgwmjjrjuSeFLBtdj.JFUVF2KH9JjeGw4rvWejC/RlXnWDltO', @rol_alu, 6);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Julieta Herrera', '38000006', 'julieta.herrera@alumnos.academisys.edu', '$2y$12$0sDknHXmuUmCVG8vJVJki.m5b7ANqWIZnoU3VlAsvI2e9jZ7ev/ne', @rol_alu, 6);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (7, 'A2025007', 'Tomás Aguirre', '38000007', '11-4000-0007', 'tomas.aguirre@alumnos.academisys.edu', 1);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Tomás Aguirre', '38000007', 'tomas.aguirre@alumnos.academisys.edu', '$2y$12$uCsd9skmutIA6A6FQUQz5.Z2C6Wq3fuB4vbFlfpMONx/o3SJX77VS', @rol_alu, 7);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Tomás Aguirre', '38000007', 'tomas.aguirre@alumnos.academisys.edu', '$2y$12$clHdmm12T46jMB5QFwOZtu9/mo1jYPspkXXP96G9IYfZD7YwXqIOC', @rol_alu, 7);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (8, 'A2025008', 'Florencia Vega', '38000008', '11-4000-0008', 'florencia.vega@alumnos.academisys.edu', 2);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Florencia Vega', '38000008', 'florencia.vega@alumnos.academisys.edu', '$2y$12$e4bDXL7CVyMKOYRNCZyixezj6gHR3dAc3YXyTcudaxqWNoa.VWpce', @rol_alu, 8);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Florencia Vega', '38000008', 'florencia.vega@alumnos.academisys.edu', '$2y$12$QFLQ6NRHitkj1.swLXRwsuneaPE1JaEmlhPPZoqd7wD4O7Pc5WEWq', @rol_alu, 8);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (9, 'A2025009', 'Nicolás Medina', '38000009', '11-4000-0009', 'nicolas.medina@alumnos.academisys.edu', 2);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Nicolás Medina', '38000009', 'nicolas.medina@alumnos.academisys.edu', '$2y$12$2XY/gQ/1CbkbyalUt/ZTWu/1Hm27pben61wA0TZ.i.7wjosq78ZFq', @rol_alu, 9);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Nicolás Medina', '38000009', 'nicolas.medina@alumnos.academisys.edu', '$2y$12$f8VhqOUp7Ty5Q8sWTjAao.1At2CE/r5zBlwROvHoLVNPUX6moB.Kq', @rol_alu, 9);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (10, 'A2025010', 'Agustina Rojas', '38000010', '11-4000-0010', 'agustina.rojas@alumnos.academisys.edu', 2);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Agustina Rojas', '38000010', 'agustina.rojas@alumnos.academisys.edu', '$2y$12$amcG.RuJzhEXoAeVAm4LnOqTOAQ7hs/I.g5UInF0HHtoJ/gxKlzRq', @rol_alu, 10);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Agustina Rojas', '38000010', 'agustina.rojas@alumnos.academisys.edu', '$2y$12$NSX0k8UAoWLSPyM5007hz.z2qyhJr91geM6GwBbvgSURxbepGd7FW', @rol_alu, 10);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (11, 'A2025011', 'Franco Domínguez', '38000011', '11-4000-0011', 'franco.dominguez@alumnos.academisys.edu', 2);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Franco Domínguez', '38000011', 'franco.dominguez@alumnos.academisys.edu', '$2y$12$DEhvLJL39cEiiZF8CMzsTOgr1K1rLNOvaFXYs2Ns5siEw7MFcBxjO', @rol_alu, 11);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Franco Domínguez', '38000011', 'franco.dominguez@alumnos.academisys.edu', '$2y$12$M.czJh3MtEocdi6Xw5HO2.xqDfF7YFt.CUAf2eHGTP2OsdJfGzifq', @rol_alu, 11);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (12, 'A2025012', 'Martina Silva', '38000012', '11-4000-0012', 'martina.silva@alumnos.academisys.edu', 3);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Martina Silva', '38000012', 'martina.silva@alumnos.academisys.edu', '$2y$12$mWzcoMDozDZN0b8m4yTy9.e6pw7vzQqNk35YMfhk0IxhT1dLxnfxe', @rol_alu, 12);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Martina Silva', '38000012', 'martina.silva@alumnos.academisys.edu', '$2y$12$kU2/isr.6U9sSTiaBYkI.uVAjZOaExGhwWfUn6pXIFZKcZGgxTXXi', @rol_alu, 12);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (13, 'A2025013', 'Bruno Sosa', '38000013', '11-4000-0013', 'bruno.sosa@alumnos.academisys.edu', 3);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Bruno Sosa', '38000013', 'bruno.sosa@alumnos.academisys.edu', '$2y$12$qoS9cufjyLpRef973YgFl.d7kdTLiAZGJWYcpa0otP6Y6O3viNDNq', @rol_alu, 13);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Bruno Sosa', '38000013', 'bruno.sosa@alumnos.academisys.edu', '$2y$12$G37lCnYKDGu3qit1uVfZXuZNZRVBIuGT/T3/NkIRcuw4GzeaY0YAy', @rol_alu, 13);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (14, 'A2025014', 'Carla Núñez', '38000014', '11-4000-0014', 'carla.nunez@alumnos.academisys.edu', 3);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Carla Núñez', '38000014', 'carla.nunez@alumnos.academisys.edu', '$2y$12$hzpJf3sIxzGHw1TSyoj1ReBYv798AiDE95Y4MuyRpzIuERTd8lTqS', @rol_alu, 14);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Carla Núñez', '38000014', 'carla.nunez@alumnos.academisys.edu', '$2y$12$AcND.1nzbSdmHPp0Ae.yGOnJXmAeFcG.DuULhLoB1/0QFezAPcfE2', @rol_alu, 14);
 INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES (15, 'A2025015', 'Iván Paredes', '38000015', '11-4000-0015', 'ivan.paredes@alumnos.academisys.edu', 3);
-INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Iván Paredes', '38000015', 'ivan.paredes@alumnos.academisys.edu', '$2y$12$XcZHRnCQTbWBX5JJDfO4mO7gZ4jzxcyvNl5hxPuosuvOVula8O8qC', @rol_alu, 15);
+INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_alumno) VALUES ('Iván Paredes', '38000015', 'ivan.paredes@alumnos.academisys.edu', '$2y$12$uPUOUZ8OpZ/EeaSbMhcwiuzOErx8un2dpt7yDLS6E1yCt4yUwSDhu', @rol_alu, 15);
 
 -- ---------- Materias ----------
 INSERT INTO Materia (id_materia, nombre, anio, id_carrera) VALUES (1, 'Introducción a la Programación', 1, 1);

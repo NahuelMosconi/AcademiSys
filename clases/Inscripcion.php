@@ -107,18 +107,18 @@ class Inscripcion
 
             // Si el mensaje es el nombre de una materia, es por correlativas.
             if (strpos($motivo, 'cupo') !== false) {
-                return [false, '❌ No hay cupo disponible: el aula está llena.'];
+                return [false, 'No hay cupo disponible: el aula está llena.'];
             }
             if (strpos($motivo, 'día y horario') !== false || strpos($motivo, 'horario') !== false) {
-                return [false, '❌ Solapamiento: ya tenés otra materia ese día y horario.'];
+                return [false, 'Solapamiento: ya tenés otra materia ese día y horario.'];
             }
             if (strpos($motivo, 'ya estaba') !== false || strpos($motivo, 'Duplicate') !== false) {
-                return [false, '❌ El alumno ya está inscripto en esa comisión.'];
+                return [false, 'El alumno ya está inscripto en esa comisión.'];
             }
             // El SP devuelve el nombre de la materia que falta como mensaje
             // cuando son correlativas. Limpiamos el prefijo técnico de PDO.
             $limpio = preg_replace('/^SQLSTATE\[\w+\].*?: \d+ /', '', $motivo);
-            return [false, '❌ Te falta aprobar una correlativa: ' . $limpio];
+            return [false, 'Te falta aprobar una correlativa: ' . $limpio];
         }
     }
 

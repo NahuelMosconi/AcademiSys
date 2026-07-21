@@ -89,7 +89,7 @@ $comisiones = $alSel > 0 ? $inscModel->comisionesParaAlumno($alSel) : [];
 
 <h2>Inscripciones</h2>
 <form method="GET" class="barra-busqueda">
-    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="🔍 Buscar por alumno, legajo o materia...">
+    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Buscar por alumno, legajo o materia...">
     <button type="submit">Filtrar</button>
     <?php if ($q !== ''): ?><a href="inscripciones.php" class="limpiar">Limpiar</a><?php endif; ?>
 </form>

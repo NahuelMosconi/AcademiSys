@@ -37,7 +37,7 @@ $materias=$materiaModel->listar($q); $carreras=$carreraModel->listar();
 </div>
 <h2>Listado</h2>
 <form method="GET" class="barra-busqueda">
-    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="🔍 Buscar por materia o carrera...">
+    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Buscar por materia o carrera...">
     <button type="submit">Filtrar</button>
     <?php if ($q !== ''): ?><a href="materias.php" class="limpiar">Limpiar</a><?php endif; ?>
 </form>

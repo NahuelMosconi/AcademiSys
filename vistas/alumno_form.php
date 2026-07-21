@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <div class="encabezado-pagina"><h1><?= $id > 0 ? 'Editar' : 'Nuevo' ?> alumno</h1></div>
-<a href="alumnos.php" class="boton" style="background:#6b7280;">← Volver</a>
+<a href="alumnos.php" class="boton boton-gris"><?= icono('volver') ?>Volver</a>
 <?php if ($error !== ''): ?><p class="aviso error"><?= htmlspecialchars($error) ?></p><?php endif; ?>
 
 <div class="tarjeta-form">

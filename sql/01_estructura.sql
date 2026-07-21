@@ -11,6 +11,10 @@ CREATE DATABASE academisys
 
 USE academisys;
 
+-- Asegura que el cliente interprete el archivo como UTF-8 al importar
+-- (evita que los acentos se guarden mal, ej. "GÃ³mez" en vez de "Gómez").
+SET NAMES utf8mb4;
+
 
 -- ============================================================
 --  TABLAS MAESTRAS (sin dependencias)

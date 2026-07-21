@@ -93,7 +93,7 @@ if ($esProfesor) {
 </div>
 
 <form method="GET" class="barra-busqueda">
-    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="🔍 Buscar por alumno, legajo, materia o tipo...">
+    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Buscar por alumno, legajo, materia o tipo...">
     <button type="submit">Filtrar</button>
     <?php if ($q !== ''): ?><a href="notas.php" class="limpiar">Limpiar</a><?php endif; ?>
 </form>

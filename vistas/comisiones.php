@@ -81,7 +81,7 @@ $periodos = (new PeriodoLectivo())->listar();
 
 <h2>Comisiones activas</h2>
 <form method="GET" class="barra-busqueda">
-    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="🔍 Buscar por materia, docente, aula o día...">
+    <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Buscar por materia, docente, aula o día...">
     <button type="submit">Filtrar</button>
     <?php if ($q !== ''): ?><a href="comisiones.php" class="limpiar">Limpiar</a><?php endif; ?>
 </form>

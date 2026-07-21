@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/sesion.php';
+require_once __DIR__ . '/../config/iconos.php';
 requerirLogin();
 $u = $_SESSION['usuario'];
 // Detecta la página actual para marcar el item activo en el menú
@@ -22,37 +23,37 @@ $iniciales = strtoupper(substr($u['nombre'], 0, 1));
     <!-- ===== SIDEBAR (menú lateral) ===== -->
     <aside class="sidebar">
         <div class="sidebar-marca">
-            <div class="icono">🎓</div>
+            <img class="marca-logo" src="../assets/logo-mark.svg" alt="">
             <span>AcademiSys</span>
         </div>
 
         <div class="sidebar-seccion">General</div>
         <nav>
-            <a href="panel.php" class="<?= activo('panel.php',$actual) ?>"><span class="ico">📊</span><span class="txt">Inicio</span></a>
+            <a href="panel.php" class="<?= activo('panel.php',$actual) ?>"><?= icono('inicio') ?><span class="txt">Inicio</span></a>
             <?php if ($u['rol'] === 'Alumno'): ?>
-                <a href="mis_materias.php" class="<?= activo('mis_materias.php',$actual) ?>"><span class="ico">📅</span><span class="txt">Mis materias</span></a>
-                <a href="mis_notas.php" class="<?= activo('mis_notas.php',$actual) ?>"><span class="ico">📄</span><span class="txt">Mis notas</span></a>
+                <a href="mis_materias.php" class="<?= activo('mis_materias.php',$actual) ?>"><?= icono('calendario') ?><span class="txt">Mis materias</span></a>
+                <a href="mis_notas.php" class="<?= activo('mis_notas.php',$actual) ?>"><?= icono('documento') ?><span class="txt">Mis notas</span></a>
             <?php else: ?>
-                <a href="inscripciones.php" class="<?= activo('inscripciones.php',$actual) ?>"><span class="ico">📝</span><span class="txt">Inscripciones</span></a>
-                <a href="notas.php" class="<?= activo('notas.php',$actual) ?>"><span class="ico">📄</span><span class="txt">Notas</span></a>
+                <a href="inscripciones.php" class="<?= activo('inscripciones.php',$actual) ?>"><?= icono('inscripcion') ?><span class="txt">Inscripciones</span></a>
+                <a href="notas.php" class="<?= activo('notas.php',$actual) ?>"><?= icono('documento') ?><span class="txt">Notas</span></a>
             <?php endif; ?>
         </nav>
 
         <?php if ($u['rol'] === 'Administrador'): ?>
         <div class="sidebar-seccion">Gestión</div>
         <nav>
-            <a href="alumnos.php" class="<?= activo('alumnos.php',$actual).' '.activo('alumno_form.php',$actual) ?>"><span class="ico">🧑‍🎓</span><span class="txt">Alumnos</span></a>
-            <a href="docentes.php" class="<?= activo('docentes.php',$actual) ?>"><span class="ico">👨‍🏫</span><span class="txt">Docentes</span></a>
-            <a href="materias.php" class="<?= activo('materias.php',$actual) ?>"><span class="ico">📚</span><span class="txt">Materias</span></a>
-            <a href="comisiones.php" class="<?= activo('comisiones.php',$actual) ?>"><span class="ico">🏫</span><span class="txt">Comisiones</span></a>
-            <a href="auditoria.php" class="<?= activo('auditoria.php',$actual) ?>"><span class="ico">🔍</span><span class="txt">Auditoría</span></a>
-            <a href="usuarios.php" class="<?= activo('usuarios.php',$actual) ?>"><span class="ico">👥</span><span class="txt">Usuarios</span></a>
+            <a href="alumnos.php" class="<?= activo('alumnos.php',$actual).' '.activo('alumno_form.php',$actual) ?>"><?= icono('alumno') ?><span class="txt">Alumnos</span></a>
+            <a href="docentes.php" class="<?= activo('docentes.php',$actual) ?>"><?= icono('docente') ?><span class="txt">Docentes</span></a>
+            <a href="materias.php" class="<?= activo('materias.php',$actual) ?>"><?= icono('materia') ?><span class="txt">Materias</span></a>
+            <a href="comisiones.php" class="<?= activo('comisiones.php',$actual) ?>"><?= icono('comision') ?><span class="txt">Comisiones</span></a>
+            <a href="auditoria.php" class="<?= activo('auditoria.php',$actual) ?>"><?= icono('auditoria') ?><span class="txt">Auditoría</span></a>
+            <a href="usuarios.php" class="<?= activo('usuarios.php',$actual) ?>"><?= icono('usuarios') ?><span class="txt">Usuarios</span></a>
         </nav>
         <?php endif; ?>
 
         <div class="sidebar-seccion">Cuenta</div>
         <nav>
-            <a href="perfil.php" class="<?= activo('perfil.php',$actual) ?>"><span class="ico">⚙️</span><span class="txt">Mi perfil</span></a>
+            <a href="perfil.php" class="<?= activo('perfil.php',$actual) ?>"><?= icono('perfil') ?><span class="txt">Mi perfil</span></a>
         </nav>
 
         <div class="sidebar-pie">
@@ -63,7 +64,7 @@ $iniciales = strtoupper(substr($u['nombre'], 0, 1));
                     <span class="rol"><?= htmlspecialchars($u['rol']) ?></span>
                 </div>
             </div>
-            <a href="../logout.php" class="btn-salir">Cerrar sesión</a>
+            <a href="../logout.php" class="btn-salir"><?= icono('salir') ?><span>Cerrar sesión</span></a>
         </div>
     </aside>
 
