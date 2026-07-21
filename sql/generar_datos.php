@@ -182,7 +182,6 @@ $planes = [
 // ============================================================================
 $aulas = [[1,'Aula 101',40],[2,'Aula 102',40],[3,'Aula 103',35],
           [4,'Laboratorio A',30],[5,'Laboratorio B',30],[6,'Aula Magna',60]];
-$periodos = [[1,'1er Cuatrimestre 2025',2025],[2,'2do Cuatrimestre 2025',2025]];
 // Pools de nombres/apellidos para generar muchas personas variadas y funcionales.
 $nombresPool = ['Rodrigo','Camila','Lucas','Valentina','Mateo','Julieta','Tomás','Florencia','Nicolás',
   'Agustina','Franco','Martina','Bruno','Carla','Lautaro','Sofía','Benjamín','Delfina','Thiago','Catalina',

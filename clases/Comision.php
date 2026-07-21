@@ -42,7 +42,8 @@ class Comision
                 JOIN Docente d        ON d.id_docente = c.id_docente
                 JOIN Aula a           ON a.id_aula    = c.id_aula
                 JOIN PeriodoLectivo p ON p.id_periodo = c.id_periodo
-                WHERE c.activo = 1 AND c.id_docente = :doc ";
+                JOIN CicloLectivo cl  ON cl.id_ciclo  = c.id_ciclo
+                WHERE c.activo = 1 AND c.id_docente = :doc AND cl.estado = 'ABIERTO' ";
         if ($filtro !== '') {
             $sql .= "AND (m.nombre LIKE :f1 OR a.nombre LIKE :f2 OR c.dia LIKE :f3) ";
             $stmt = $this->db->prepare($sql . "ORDER BY c.id_comision");

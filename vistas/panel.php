@@ -34,10 +34,11 @@ if ($esAlumno && $u['id_alumno']):
 </div>
 <?php elseif ($esProfesor && $u['id_docente']):
     $doc = (int)$u['id_docente'];
-    $misComisiones = (int)$db->query("SELECT COUNT(*) FROM Comision WHERE id_docente=$doc AND activo=1")->fetchColumn();
-    $misMaterias = (int)$db->query("SELECT COUNT(DISTINCT id_materia) FROM Comision WHERE id_docente=$doc AND activo=1")->fetchColumn();
-    $misAlumnos = (int)$db->query("SELECT COUNT(DISTINCT i.id_alumno) FROM Inscripcion i JOIN Comision c ON c.id_comision=i.id_comision WHERE c.id_docente=$doc AND i.estado='ACTIVA'")->fetchColumn();
-    $notasCargadas = (int)$db->query("SELECT COUNT(*) FROM Acta WHERE id_materia IN (SELECT DISTINCT id_materia FROM Comision WHERE id_docente=$doc)")->fetchColumn();
+    // Todo referido al ciclo lectivo ABIERTO (el año en curso).
+    $misComisiones = (int)$db->query("SELECT COUNT(*) FROM Comision c JOIN CicloLectivo cl ON cl.id_ciclo=c.id_ciclo WHERE c.id_docente=$doc AND c.activo=1 AND cl.estado='ABIERTO'")->fetchColumn();
+    $misMaterias = (int)$db->query("SELECT COUNT(DISTINCT c.id_materia) FROM Comision c JOIN CicloLectivo cl ON cl.id_ciclo=c.id_ciclo WHERE c.id_docente=$doc AND c.activo=1 AND cl.estado='ABIERTO'")->fetchColumn();
+    $misAlumnos = (int)$db->query("SELECT COUNT(DISTINCT i.id_alumno) FROM Inscripcion i JOIN Comision c ON c.id_comision=i.id_comision JOIN CicloLectivo cl ON cl.id_ciclo=c.id_ciclo WHERE c.id_docente=$doc AND i.estado='ACTIVA' AND cl.estado='ABIERTO'")->fetchColumn();
+    $notasCargadas = (int)$db->query("SELECT COUNT(*) FROM Acta WHERE id_materia IN (SELECT DISTINCT c.id_materia FROM Comision c JOIN CicloLectivo cl ON cl.id_ciclo=c.id_ciclo WHERE c.id_docente=$doc AND cl.estado='ABIERTO')")->fetchColumn();
 ?>
 <div class="tarjetas">
     <div class="tarjeta"><div class="ico-card ico-naranja"><?= icono('comision') ?></div><h3>Mis comisiones</h3><p class="numero"><?= $misComisiones ?></p></div>
@@ -46,9 +47,10 @@ if ($esAlumno && $u['id_alumno']):
     <div class="tarjeta"><div class="ico-card ico-rojo"><?= icono('documento') ?></div><h3>Notas (mis materias)</h3><p class="numero"><?= $notasCargadas ?></p></div>
 </div>
 <?php else:
+    // Alumnos y notas son históricos; comisiones e inscripciones, del ciclo abierto.
     $totalAlumnos = (int)$db->query("SELECT COUNT(*) FROM Alumno WHERE activo=1")->fetchColumn();
-    $totalInsc    = (int)$db->query("SELECT COUNT(*) FROM Inscripcion WHERE estado='ACTIVA'")->fetchColumn();
-    $totalCom     = (int)$db->query("SELECT COUNT(*) FROM Comision WHERE activo=1")->fetchColumn();
+    $totalInsc    = (int)$db->query("SELECT COUNT(*) FROM Inscripcion i JOIN Comision c ON c.id_comision=i.id_comision JOIN CicloLectivo cl ON cl.id_ciclo=c.id_ciclo WHERE i.estado='ACTIVA' AND cl.estado='ABIERTO'")->fetchColumn();
+    $totalCom     = (int)$db->query("SELECT COUNT(*) FROM Comision c JOIN CicloLectivo cl ON cl.id_ciclo=c.id_ciclo WHERE c.activo=1 AND cl.estado='ABIERTO'")->fetchColumn();
     $totalActas   = (int)$db->query("SELECT COUNT(*) FROM Acta")->fetchColumn();
 ?>
 <div class="tarjetas">

@@ -105,8 +105,10 @@ class Acta
     {
         $stmt = $this->db->prepare(
             "SELECT DISTINCT m.id_materia, m.nombre
-             FROM Comision c JOIN Materia m ON m.id_materia = c.id_materia
-             WHERE c.id_docente = :doc AND c.activo = 1
+             FROM Comision c
+             JOIN Materia m ON m.id_materia = c.id_materia
+             JOIN CicloLectivo cl ON cl.id_ciclo = c.id_ciclo
+             WHERE c.id_docente = :doc AND c.activo = 1 AND cl.estado = 'ABIERTO'
              ORDER BY m.nombre");
         $stmt->execute(['doc'=>$idDocente]);
         return $stmt->fetchAll();
@@ -120,7 +122,9 @@ class Acta
              FROM Inscripcion i
              JOIN Comision c ON c.id_comision = i.id_comision
              JOIN Alumno al  ON al.id_alumno = i.id_alumno
-             WHERE c.id_docente = :doc AND c.id_materia = :mat AND i.estado='ACTIVA'
+             JOIN CicloLectivo cl ON cl.id_ciclo = c.id_ciclo
+             WHERE c.id_docente = :doc AND c.id_materia = :mat
+               AND i.estado='ACTIVA' AND cl.estado = 'ABIERTO'
              ORDER BY al.nombre");
         $stmt->execute(['doc'=>$idDocente, 'mat'=>$idMateria]);
         return $stmt->fetchAll();

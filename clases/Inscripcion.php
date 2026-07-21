@@ -20,9 +20,10 @@ class Inscripcion
     public function listar(string $filtro = ''): array
     {
         // ===== [USA VISTA SQL: vista_inscripciones] ===== (definida en sql/01_estructura.sql)
-        $sql = "SELECT * FROM vista_inscripciones ";
+        // Solo las inscripciones del ciclo lectivo ABIERTO (el año en curso).
+        $sql = "SELECT * FROM vista_inscripciones WHERE ciclo_estado='ABIERTO' ";
         if ($filtro !== '') {
-            $sql .= "WHERE alumno LIKE :f1 OR legajo LIKE :f2 OR materia LIKE :f3 OR estado LIKE :f4 ";
+            $sql .= "AND (alumno LIKE :f1 OR legajo LIKE :f2 OR materia LIKE :f3 OR estado LIKE :f4) ";
             $stmt = $this->db->prepare($sql . "ORDER BY fecha DESC LIMIT 200");
             $like = "%$filtro%";
             $stmt->execute(['f1'=>$like,'f2'=>$like,'f3'=>$like,'f4'=>$like]);
@@ -46,7 +47,8 @@ class Inscripcion
                 JOIN Alumno al  ON al.id_alumno = i.id_alumno
                 JOIN Comision c ON c.id_comision = i.id_comision
                 JOIN Materia m  ON m.id_materia = c.id_materia
-                WHERE c.id_docente = :doc ";
+                JOIN CicloLectivo cl ON cl.id_ciclo = c.id_ciclo
+                WHERE c.id_docente = :doc AND cl.estado = 'ABIERTO' ";
         if ($filtro !== '') {
             $sql .= "AND (al.nombre LIKE :f1 OR al.legajo LIKE :f2 OR m.nombre LIKE :f3) ";
             $stmt = $this->db->prepare($sql . "ORDER BY i.fecha DESC LIMIT 200");

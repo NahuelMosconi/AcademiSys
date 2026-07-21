@@ -680,13 +680,16 @@ CREATE OR REPLACE VIEW vista_inscripciones AS
         a.nombre       AS aula,         -- nombre del aula (via Comision)
         c.dia,
         c.hora_inicio,
-        c.hora_fin
+        c.hora_fin,
+        cl.anio        AS ciclo_anio,   -- año del ciclo lectivo
+        cl.estado      AS ciclo_estado  -- ABIERTO / CERRADO
     FROM Inscripcion i
     JOIN Alumno   al ON al.id_alumno   = i.id_alumno
     JOIN Comision  c ON  c.id_comision = i.id_comision
     JOIN Materia   m ON  m.id_materia  = c.id_materia
     JOIN Docente   d ON  d.id_docente  = c.id_docente
-    JOIN Aula      a ON  a.id_aula     = c.id_aula;
+    JOIN Aula      a ON  a.id_aula     = c.id_aula
+    JOIN CicloLectivo cl ON cl.id_ciclo = c.id_ciclo;
 
 -- ==========================================================================
 --  [VISTA: vista_notas_alumnos]   (NOTAS LEGIBLES)
