@@ -15,9 +15,10 @@ class Comision
     public function listar(string $filtro = ''): array
     {
         // ===== [USA VISTA SQL: vista_comisiones_completas] ===== (definida en sql/01_estructura.sql)
-        $sql = "SELECT * FROM vista_comisiones_completas ";
+        // Solo las comisiones del ciclo lectivo ABIERTO (el año en curso).
+        $sql = "SELECT * FROM vista_comisiones_completas WHERE ciclo_estado='ABIERTO' ";
         if ($filtro !== '') {
-            $sql .= "WHERE materia LIKE :f1 OR docente LIKE :f2 OR aula LIKE :f3 OR dia LIKE :f4 ";
+            $sql .= "AND (materia LIKE :f1 OR docente LIKE :f2 OR aula LIKE :f3 OR dia LIKE :f4) ";
             $stmt = $this->db->prepare($sql . "ORDER BY id_comision");
             $like = "%$filtro%";
             $stmt->execute(['f1'=>$like,'f2'=>$like,'f3'=>$like,'f4'=>$like]);
@@ -79,6 +80,12 @@ class Comision
         if ($horaInicio >= $horaFin) {
             return [false, 'La hora de inicio debe ser anterior a la hora de fin.'];
         }
+        // La comisión se dicta en el CICLO LECTIVO ABIERTO (el año en curso).
+        $idCiclo = (int)$this->db->query(
+            "SELECT id_ciclo FROM CicloLectivo WHERE estado='ABIERTO' ORDER BY anio DESC LIMIT 1")->fetchColumn();
+        if ($idCiclo <= 0) {
+            return [false, 'No hay un ciclo lectivo abierto. Abrí/reabrí un ciclo antes de crear comisiones.'];
+        }
         try {
             // Las vacantes arrancan en el cupo del aula elegida.
             $cupo = $this->db->prepare("SELECT cupo_maximo FROM Aula WHERE id_aula = :a");
@@ -87,14 +94,13 @@ class Comision
 
             // ===== [DISPARA TRIGGER: tr_validar_comision] =====
             // Este INSERT activa el trigger BEFORE INSERT que valida que no se
-            // pisen aula ni docente (sql/01_estructura.sql). Si chocan, lanza error
-            // y cae en el catch de abajo.
+            // pisen aula ni docente en el mismo ciclo (sql/01_estructura.sql).
             $stmt = $this->db->prepare(
-                "INSERT INTO Comision (id_materia, id_docente, id_aula, id_periodo,
+                "INSERT INTO Comision (id_materia, id_docente, id_aula, id_periodo, id_ciclo,
                                        dia, hora_inicio, hora_fin, vacantes_disponibles)
-                 VALUES (:m, :d, :a, :p, :dia, :hi, :hf, :vac)");
+                 VALUES (:m, :d, :a, :p, :cic, :dia, :hi, :hf, :vac)");
             $stmt->execute([
-                'm' => $idMateria, 'd' => $idDocente, 'a' => $idAula, 'p' => $idPeriodo,
+                'm' => $idMateria, 'd' => $idDocente, 'a' => $idAula, 'p' => $idPeriodo, 'cic' => $idCiclo,
                 'dia' => $dia, 'hi' => $horaInicio, 'hf' => $horaFin, 'vac' => $vacantes]);
             return [true, 'Comisión creada correctamente.'];
         } catch (PDOException $e) {
@@ -134,19 +140,21 @@ class Comision
         if ($horaInicio >= $horaFin) {
             return [false, 'La hora de inicio debe ser anterior a la hora de fin.'];
         }
-        // Choque de AULA (excluye esta misma comisión).
+        // Choque de AULA en el MISMO CICLO de esta comisión (excluye esta misma).
         $qa = $this->db->prepare(
             "SELECT COUNT(*) FROM Comision WHERE activo=1 AND id_comision<>:id
+             AND id_ciclo = (SELECT id_ciclo FROM Comision WHERE id_comision=:id2)
              AND id_aula=:a AND dia=:dia AND hora_inicio < :hf AND hora_fin > :hi");
-        $qa->execute(['id'=>$id,'a'=>$idAula,'dia'=>$dia,'hf'=>$horaFin,'hi'=>$horaInicio]);
+        $qa->execute(['id'=>$id,'id2'=>$id,'a'=>$idAula,'dia'=>$dia,'hf'=>$horaFin,'hi'=>$horaInicio]);
         if ((int)$qa->fetchColumn() > 0) {
             return [false, 'El aula ya está ocupada ese día y horario.'];
         }
-        // Choque de DOCENTE (excluye esta misma comisión).
+        // Choque de DOCENTE en el MISMO CICLO (excluye esta misma comisión).
         $qd = $this->db->prepare(
             "SELECT COUNT(*) FROM Comision WHERE activo=1 AND id_comision<>:id
+             AND id_ciclo = (SELECT id_ciclo FROM Comision WHERE id_comision=:id2)
              AND id_docente=:d AND dia=:dia AND hora_inicio < :hf AND hora_fin > :hi");
-        $qd->execute(['id'=>$id,'d'=>$idDocente,'dia'=>$dia,'hf'=>$horaFin,'hi'=>$horaInicio]);
+        $qd->execute(['id'=>$id,'id2'=>$id,'d'=>$idDocente,'dia'=>$dia,'hf'=>$horaFin,'hi'=>$horaInicio]);
         if ((int)$qd->fetchColumn() > 0) {
             return [false, 'El docente ya tiene otra clase ese día y horario.'];
         }

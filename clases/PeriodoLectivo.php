@@ -2,8 +2,9 @@
 require_once __DIR__ . '/../config/Database.php';
 
 /**
- * Clase PeriodoLectivo — ABM de períodos lectivos (cuatrimestres/años).
- * Cada comisión pertenece a un período (ej: "1er Cuatrimestre 2025").
+ * Clase PeriodoLectivo — los cuatrimestres/semestres (genéricos).
+ * El AÑO no vive acá: lo pone el ciclo lectivo (CicloLectivo). El período solo
+ * indica el tramo del año: "1er Cuatrimestre", "2do Cuatrimestre".
  */
 class PeriodoLectivo
 {
@@ -15,14 +16,14 @@ class PeriodoLectivo
     public function listar(): array
     {
         return $this->db->query(
-            "SELECT * FROM PeriodoLectivo ORDER BY anio DESC, nombre")->fetchAll();
+            "SELECT * FROM PeriodoLectivo ORDER BY id_periodo")->fetchAll();
     }
 
-    /** CREATE — Da de alta un período lectivo. */
-    public function crear(string $nombre, int $anio): bool
+    /** CREATE — Da de alta un período (cuatrimestre). */
+    public function crear(string $nombre): bool
     {
         $stmt = $this->db->prepare(
-            "INSERT INTO PeriodoLectivo (nombre, anio) VALUES (:n, :a)");
-        return $stmt->execute(['n' => $nombre, 'a' => $anio]);
+            "INSERT INTO PeriodoLectivo (nombre) VALUES (:n)");
+        return $stmt->execute(['n' => $nombre]);
     }
 }

@@ -71,13 +71,17 @@ class Inscripcion
              JOIN Docente d  ON d.id_docente = c.id_docente
              JOIN Aula a     ON a.id_aula = c.id_aula
              JOIN PeriodoLectivo p ON p.id_periodo = c.id_periodo
-             WHERE i.id_alumno = :al AND i.estado = 'ACTIVA'
+             JOIN CicloLectivo cl  ON cl.id_ciclo  = c.id_ciclo
+             WHERE i.id_alumno = :al AND i.estado = 'ACTIVA' AND cl.estado = 'ABIERTO'
              ORDER BY FIELD(c.dia,'Lunes','Martes','Miércoles','Jueves','Viernes'), c.hora_inicio");
         $stmt->execute(['al' => $idAlumno]);
         return $stmt->fetchAll();
     }
 
-    /** Comisiones a las que un alumno PUEDE inscribirse: solo de su carrera. */
+    /**
+     * Comisiones a las que un alumno PUEDE inscribirse: de su carrera y SOLO del
+     * ciclo lectivo ABIERTO (el año en curso).
+     */
     public function comisionesParaAlumno(int $idAlumno): array
     {
         $stmt = $this->db->prepare(
@@ -85,7 +89,8 @@ class Inscripcion
              FROM Comision c
              JOIN Materia m ON m.id_materia = c.id_materia
              JOIN Alumno al ON al.id_carrera = m.id_carrera
-             WHERE al.id_alumno = :al AND c.activo = 1
+             JOIN CicloLectivo cl ON cl.id_ciclo = c.id_ciclo
+             WHERE al.id_alumno = :al AND c.activo = 1 AND cl.estado = 'ABIERTO'
              ORDER BY m.nombre");
         $stmt->execute(['al'=>$idAlumno]);
         return $stmt->fetchAll();

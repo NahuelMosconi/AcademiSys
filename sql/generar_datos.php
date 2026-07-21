@@ -241,8 +241,17 @@ $out[] = "";
 $out[] = "-- ---------- Aulas ----------";
 foreach ($aulas as $a) $out[] = "INSERT INTO Aula (id_aula, nombre, cupo_maximo) VALUES ({$a[0]}, ".q($a[1]).", {$a[2]});";
 $out[] = "";
-$out[] = "-- ---------- Períodos lectivos ----------";
-foreach ($periodos as $p) $out[] = "INSERT INTO PeriodoLectivo (id_periodo, nombre, anio) VALUES ({$p[0]}, ".q($p[1]).", {$p[2]});";
+// Ciclos lectivos: el 2025 (ABIERTO) y los cuatrimestres ya vienen de
+// sql/01_estructura.sql. Acá agregamos dos ciclos ANTERIORES (cerrados) y
+// resolvemos los ids por año/nombre en variables de sesión.
+$out[] = "-- ---------- Ciclos lectivos anteriores (cerrados) ----------";
+$out[] = "INSERT INTO CicloLectivo (anio, estado, fecha_apertura, fecha_cierre) VALUES";
+$out[] = "    (2023, 'CERRADO', '2023-03-13', '2023-12-15'),";
+$out[] = "    (2024, 'CERRADO', '2024-03-11', '2024-12-13');";
+$out[] = "SET @per1  = (SELECT id_periodo FROM PeriodoLectivo WHERE nombre = '1er Cuatrimestre');";
+$out[] = "SET @c2023 = (SELECT id_ciclo FROM CicloLectivo WHERE anio = 2023);";
+$out[] = "SET @c2024 = (SELECT id_ciclo FROM CicloLectivo WHERE anio = 2024);";
+$out[] = "SET @c2025 = (SELECT id_ciclo FROM CicloLectivo WHERE anio = 2025);";
 $out[] = "";
 
 // Materias (ids globales) + mapa codigo->id por carrera
@@ -318,43 +327,66 @@ foreach ($planes as $nombre => $p) {
 }
 $out[] = "";
 
-// Comisiones: para cada carrera, TODAS sus materias de 1er año.
-// Programación sin choques: se recorre una lista de pares (día, horario). Si
-// varias comisiones caen en el mismo par, usan aulas y docentes DISTINTOS, así
-// nunca se pisan aula ni docente (respeta el trigger tr_validar_comision).
-$out[] = "-- ---------- Comisiones (materias de 1er año de cada carrera) ----------";
+// ----------------------------------------------------------------------------
+//  Comisiones por CICLO + cohortes de alumnos en distintas etapas.
+//  Ciclos: 2025 (abierto), 2024 y 2023 (cerrados). Por carrera se abren
+//  comisiones para ciertos años en cada ciclo:
+//     2025 -> 1°, 2° y 3° año   |   2024 -> 1° y 2°   |   2023 -> 1°
+//  Cohortes (de 7 por carrera): 3 ingresantes (cursan 1° en 2025),
+//  2 intermedios (hicieron 1° en 2024, cursan 2° en 2025) y 2 avanzados
+//  (1° en 2023, 2° en 2024, cursan 3° en 2025).
+//  Los choques se validan POR CICLO, así que cada ciclo se agenda por separado.
+// ----------------------------------------------------------------------------
 $pares = [];
-foreach ($dias as $d) foreach ($slots as $s) $pares[] = [$d, $s];   // 5 x 6 = 30 pares
-$comIdx = 0; $comisionesPorCarrera = []; $comMateria = [];
-foreach ($planes as $nombre => $p) {
-    $cid = $carreraIds[$nombre];
-    $mats1 = array_values(array_filter($p['mats'], fn($m)=>$m[2]===1));   // todo 1er año
-    foreach ($mats1 as $m) {
-        $pairIdx = $comIdx % count($pares);
-        $occ     = intdiv($comIdx, count($pares));       // 0,1,2... comisiones en ese par
-        [$slotDia, $slotHora] = $pares[$pairIdx];
-        $aula = $aulas[$occ % count($aulas)];             // aula distinta por ocurrencia
-        $doc  = $docIds[($pairIdx * 3 + $occ) % count($docIds)];  // docente distinto en el par
-        $comIdx++;
-        $idMat = $idg[$cid][$m[0]];
-        $out[] = "INSERT INTO Comision (id_comision, id_materia, id_docente, id_aula, id_periodo, dia, hora_inicio, hora_fin, vacantes_disponibles) VALUES ("
-               . "$comIdx, $idMat, $doc, {$aula[0]}, 1, ".q($slotDia).", ".q($slotHora[0]).", ".q($slotHora[1]).", {$aula[2]});";
-        $comisionesPorCarrera[$cid][] = $comIdx;
-        $comMateria[$comIdx] = $idMat;
+foreach ($dias as $d) foreach ($slots as $s) $pares[] = [$d, $s];   // 30 pares (día,horario)
+$NMAT = [1=>3, 2=>2, 3=>2];                                          // comisiones por año
+$aniosPorCiclo = ['@c2025'=>[1,2,3], '@c2024'=>[1,2], '@c2023'=>[1]];
+function matsAnio(array $mats, int $anio, int $n): array {
+    return array_slice(array_values(array_filter($mats, fn($m)=>$m[2]===$anio)), 0, $n);
+}
+
+$out[] = "-- ---------- Comisiones (por ciclo lectivo y año) ----------";
+$comIdx = 0; $comMateria = []; $com = [];   // com[cid][cicloVar][anio] = [idComision,...]
+foreach ($aniosPorCiclo as $cicloVar => $anios) {
+    $sched = 0;   // contador de agenda POR CICLO (los choques se validan por ciclo)
+    foreach ($planes as $nombre => $p) {
+        $cid = $carreraIds[$nombre];
+        foreach ($anios as $anio) {
+            foreach (matsAnio($p['mats'], $anio, $NMAT[$anio]) as $m) {
+                $pairIdx = $sched % count($pares);
+                $occ     = intdiv($sched, count($pares));
+                [$slotDia, $slotHora] = $pares[$pairIdx];
+                $aula = $aulas[$occ % count($aulas)];
+                $doc  = $docIds[($pairIdx * 3 + $occ) % count($docIds)];
+                $sched++; $comIdx++;
+                $idMat = $idg[$cid][$m[0]];
+                $out[] = "INSERT INTO Comision (id_comision, id_materia, id_docente, id_aula, id_periodo, id_ciclo, dia, hora_inicio, hora_fin, vacantes_disponibles) VALUES ("
+                       . "$comIdx, $idMat, $doc, {$aula[0]}, @per1, $cicloVar, ".q($slotDia).", ".q($slotHora[0]).", ".q($slotHora[1]).", {$aula[2]});";
+                $com[$cid][$cicloVar][$anio][] = $comIdx;
+                $comMateria[$comIdx] = $idMat;
+            }
+        }
     }
 }
 $out[] = "";
 
-// Inscripciones: cada alumno a las comisiones de su carrera.
-$out[] = "-- ---------- Inscripciones ----------";
-$fecha = '2025-03-10 09:00:00'; $inscList = [];
+// Inscripciones por cohorte (en el año/ciclo que corresponde a su etapa).
+$out[] = "-- ---------- Inscripciones (cada cohorte en su etapa) ----------";
+$inscList = [];
+function inscribir(&$out,&$inscList,$al,$coms,$fecha){
+    foreach ($coms as $c){ $out[]="INSERT INTO Inscripcion (id_alumno, id_comision, fecha, estado) VALUES ($al, $c, '".$fecha."', 'ACTIVA');"; $inscList[]=[$al,$c,$fecha]; }
+}
+$cohortes = [];
 foreach ($alumnosPorCarrera as $cid => $alus) {
-    foreach ($alus as $al) {
-        foreach (($comisionesPorCarrera[$cid] ?? []) as $com) {
-            $out[] = "INSERT INTO Inscripcion (id_alumno, id_comision, fecha, estado) VALUES ($al, $com, ".q($fecha).", 'ACTIVA');";
-            $inscList[] = [$al, $com];
-        }
-    }
+    $ing = array_slice($alus,0,3); $int = array_slice($alus,3,2); $avz = array_slice($alus,5,2);
+    $cohortes[$cid] = ['ing'=>$ing,'int'=>$int,'avz'=>$avz];
+    $c25 = $com[$cid]['@c2025'] ?? []; $c24 = $com[$cid]['@c2024'] ?? []; $c23 = $com[$cid]['@c2023'] ?? [];
+    foreach ($ing as $al) inscribir($out,$inscList,$al, $c25[1] ?? [], '2025-03-10 09:00:00');
+    foreach ($int as $al){ inscribir($out,$inscList,$al, $c24[1] ?? [], '2024-03-11 09:00:00');
+                           inscribir($out,$inscList,$al, $c25[2] ?? [], '2025-03-10 09:00:00'); }
+    foreach ($avz as $al){ inscribir($out,$inscList,$al, $c23[1] ?? [], '2023-03-13 09:00:00');
+                           inscribir($out,$inscList,$al, $c24[2] ?? [], '2024-03-11 09:00:00');
+                           inscribir($out,$inscList,$al, $c25[3] ?? [], '2025-03-10 09:00:00'); }
 }
 $out[] = "";
 $out[] = "-- Recalcular vacantes segun inscriptos activos.";
@@ -364,32 +396,29 @@ $out[] = "  - (SELECT COUNT(*) FROM Inscripcion i WHERE i.id_comision = c.id_com
 $out[] = "";
 $out[] = "-- ---------- Auditoría de inscripciones (espeja las inscripciones) ----------";
 foreach ($inscList as $x)
-    $out[] = "INSERT INTO AuditoriaInscripcion (id_alumno, id_comision, ip_origen, fecha_registro) VALUES ({$x[0]}, {$x[1]}, '127.0.0.1', ".q($fecha).");";
+    $out[] = "INSERT INTO AuditoriaInscripcion (id_alumno, id_comision, ip_origen, fecha_registro) VALUES ({$x[0]}, {$x[1]}, '127.0.0.1', '".$x[2]."');";
 $out[] = "";
 
-// Notas: cargamos notas a los primeros alumnos de cada carrera para que se vean
-// los 4 estados (Promocionada / Regular / Aprobada / Libre). Sin Trabajos Prácticos.
-$out[] = "-- ---------- Notas (Acta). Muestran los 4 estados de las materias. ----------";
-$fnota = '2025-06-20';
+// Notas: la historia que ubica a cada alumno en su etapa.
+$out[] = "-- ---------- Notas (Acta): historial que marca la etapa de cada alumno ----------";
 function acta(&$out,$al,$mat,$tipo,$nota,$f){ $out[]="INSERT INTO Acta (id_alumno, id_materia, tipo, nota_final, fecha) VALUES ($al, $mat, ".q($tipo).", ".number_format($nota,2,'.','').", ".q($f).");"; }
-foreach ($alumnosPorCarrera as $cid => $alus) {
-    $coms = $comisionesPorCarrera[$cid] ?? [];
-    if (count($coms) < 2) continue;
-    $matA = $comMateria[$coms[0]]; $matB = $comMateria[$coms[1]];
-    // Alumno 0: Promocionada en A (8 y 9), Regular en B (5 y 6).
-    if (isset($alus[0])) {
-        acta($out,$alus[0],$matA,'1er Parcial',8.00,$fnota); acta($out,$alus[0],$matA,'2do Parcial',9.00,$fnota);
-        acta($out,$alus[0],$matB,'1er Parcial',5.00,$fnota); acta($out,$alus[0],$matB,'2do Parcial',6.00,$fnota);
+function matsDe($coms,$comMateria){ return array_map(fn($c)=>$comMateria[$c], $coms); }
+foreach ($cohortes as $cid => $co) {
+    $c25 = $com[$cid]['@c2025'] ?? []; $c24 = $com[$cid]['@c2024'] ?? []; $c23 = $com[$cid]['@c2023'] ?? [];
+    // Intermedios: aprobaron (Final) las materias de 1° cursadas en 2024.
+    foreach ($co['int'] as $al)
+        foreach (matsDe($c24[1] ?? [], $comMateria) as $mat) acta($out,$al,$mat,'Final',7.00,'2024-11-20');
+    // Avanzados: aprobaron 1° (2023) y 2° (2024).
+    foreach ($co['avz'] as $al){
+        foreach (matsDe($c23[1] ?? [], $comMateria) as $mat) acta($out,$al,$mat,'Final',8.00,'2023-11-22');
+        foreach (matsDe($c24[2] ?? [], $comMateria) as $mat) acta($out,$al,$mat,'Final',7.00,'2024-11-20');
     }
-    // Alumno 1: Libre en A (parcial bajo), Aprobada por final en B.
-    if (isset($alus[1])) {
-        acta($out,$alus[1],$matA,'1er Parcial',3.00,$fnota);
-        acta($out,$alus[1],$matB,'1er Parcial',6.00,$fnota); acta($out,$alus[1],$matB,'2do Parcial',7.00,$fnota);
-        acta($out,$alus[1],$matB,'Final',8.00,'2025-07-25');
-    }
-    // Alumno 2: Promocionada en A (7 y 8).
-    if (isset($alus[2])) {
-        acta($out,$alus[2],$matA,'1er Parcial',7.00,$fnota); acta($out,$alus[2],$matA,'2do Parcial',8.00,$fnota);
+    // Ingresantes: notas del ciclo actual (2025) en su 1ra materia de 1°, variadas.
+    $m1 = isset($c25[1][0]) ? $comMateria[$c25[1][0]] : null;
+    if ($m1 !== null) {
+        if (isset($co['ing'][0])) { acta($out,$co['ing'][0],$m1,'1er Parcial',8.00,'2025-06-20'); acta($out,$co['ing'][0],$m1,'2do Parcial',9.00,'2025-06-25'); }
+        if (isset($co['ing'][1])) { acta($out,$co['ing'][1],$m1,'1er Parcial',5.00,'2025-06-20'); acta($out,$co['ing'][1],$m1,'2do Parcial',6.00,'2025-06-25'); }
+        if (isset($co['ing'][2])) { acta($out,$co['ing'][2],$m1,'1er Parcial',3.00,'2025-06-20'); }
     }
 }
 $out[] = "";

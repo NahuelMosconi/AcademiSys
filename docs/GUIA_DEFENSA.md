@@ -73,6 +73,16 @@ la cláusula `COMMENT`).
 - **Se llama desde:** `clases/Inscripcion.php → anular()`.
 - **Pantalla:** `vistas/inscripciones.php`.
 
+### 3.4 `CerrarCicloLectivo` — cerrar el año y abrir el siguiente
+- **SQL:** buscar `[PROCEDIMIENTO: CerrarCicloLectivo]`.
+- **Qué hace:** marca el ciclo lectivo (año) ABIERTO como `CERRADO` con su fecha, e
+  **inserta el año siguiente como ABIERTO**. Transacción ACID (todo o nada).
+- **Se llama desde:** `clases/CicloLectivo.php → cerrarCiclo()`.
+- **Pantalla:** `vistas/ciclos.php` (botón "Cerrar ciclo actual").
+- **Concepto:** el **ciclo lectivo** es el año académico; solo uno está ABIERTO
+  (el actual). Las comisiones e inscripciones nuevas van al ciclo abierto; los
+  cerrados son historia. Por eso los alumnos están en etapas distintas.
+
 ---
 
 ## 3.bis Mapa de FUNCIONES

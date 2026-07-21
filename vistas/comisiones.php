@@ -13,6 +13,7 @@ require_once __DIR__ . '/../clases/Materia.php';
 require_once __DIR__ . '/../clases/Docente.php';
 require_once __DIR__ . '/../clases/Aula.php';
 require_once __DIR__ . '/../clases/PeriodoLectivo.php';
+require_once __DIR__ . '/../clases/CicloLectivo.php';
 
 $comisionModel = new Comision();
 $mensaje = ''; $tipo = '';
@@ -54,12 +55,14 @@ $materias = (new Materia())->listarParaCombo();
 $docentes = (new Docente())->listar();
 $aulas    = (new Aula())->listar();
 $periodos = (new PeriodoLectivo())->listar();
+$cicloActual = (new CicloLectivo())->actual();
 $editando = ((int)($datos['id_comision'] ?? 0)) > 0;
 $hIni = $datos['hora_inicio'] ? substr($datos['hora_inicio'],0,5) : '';
 $hFin = $datos['hora_fin'] ? substr($datos['hora_fin'],0,5) : '';
 ?>
 
-<div class="encabezado-pagina"><h1>Comisiones</h1><p>Dictado de materias con docente, aula, período y horario.</p></div>
+<div class="encabezado-pagina"><h1>Comisiones</h1>
+<p>Dictado de materias<?php if ($cicloActual): ?> del ciclo lectivo actual <strong><?= (int)$cicloActual['anio'] ?></strong><?php endif; ?> (docente, aula, período y horario).</p></div>
 
 <?php if ($mensaje !== ''): ?>
     <p class="aviso <?= $tipo ?>"><?= htmlspecialchars($mensaje) ?></p>

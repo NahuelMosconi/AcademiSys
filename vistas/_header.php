@@ -47,6 +47,7 @@ $iniciales = strtoupper(substr($u['nombre'], 0, 1));
             <a href="carreras.php" class="<?= activo('carreras.php',$actual) ?>"><?= icono('carrera') ?><span class="txt">Carreras</span></a>
             <a href="materias.php" class="<?= activo('materias.php',$actual) ?>"><?= icono('materia') ?><span class="txt">Materias</span></a>
             <a href="comisiones.php" class="<?= activo('comisiones.php',$actual) ?>"><?= icono('comision') ?><span class="txt">Comisiones</span></a>
+            <a href="ciclos.php" class="<?= activo('ciclos.php',$actual) ?>"><?= icono('ciclo') ?><span class="txt">Ciclos lectivos</span></a>
             <a href="auditoria.php" class="<?= activo('auditoria.php',$actual) ?>"><?= icono('auditoria') ?><span class="txt">Auditoría</span></a>
             <a href="usuarios.php" class="<?= activo('usuarios.php',$actual) ?>"><?= icono('usuarios') ?><span class="txt">Usuarios</span></a>
         </nav>

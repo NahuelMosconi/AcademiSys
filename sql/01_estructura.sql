@@ -19,6 +19,7 @@
 --   [PROCEDIMIENTO: RegistrarNota]       -> carga una nota (Acta)
 --   [PROCEDIMIENTO: InscribirAlumno]     -> MOTOR de inscripcion (3 reglas+ACID)
 --   [PROCEDIMIENTO: AnularInscripcion]   -> baja logica de inscripcion
+--   [PROCEDIMIENTO: CerrarCicloLectivo]  -> cierra el ciclo actual y abre el siguiente
 --   [TRIGGER: tr_auditar_nota]           -> audita cada nota cargada
 --   [TRIGGER: tr_validar_comision]       -> evita choques de aula/docente
 --   [VISTA: vista_inscripciones]         -> inscripciones legibles (JOINs)
@@ -106,11 +107,21 @@ CREATE TABLE Aula (
     cupo_maximo  INT NOT NULL                        -- cuantos alumnos entran
 ) ENGINE=InnoDB;
 
--- (6) PeriodoLectivo: el cuatrimestre/anio en que se dicta una comision.
+-- (6) PeriodoLectivo: el cuatrimestre/semestre. Es GENERICO (el anio lo pone el
+--     ciclo lectivo): "1er Cuatrimestre", "2do Cuatrimestre".
 CREATE TABLE PeriodoLectivo (
     id_periodo  INT AUTO_INCREMENT PRIMARY KEY,
-    nombre      VARCHAR(40) NOT NULL UNIQUE,
-    anio        INT NOT NULL
+    nombre      VARCHAR(40) NOT NULL UNIQUE
+) ENGINE=InnoDB;
+
+-- (6b) CicloLectivo: el ANIO academico. Solo uno esta ABIERTO (el actual);
+--      los CERRADO son los anteriores. Al cerrar el actual se abre el siguiente.
+CREATE TABLE CicloLectivo (
+    id_ciclo       INT AUTO_INCREMENT PRIMARY KEY,
+    anio           INT NOT NULL UNIQUE,
+    estado         VARCHAR(10) NOT NULL DEFAULT 'ABIERTO',   -- ABIERTO / CERRADO
+    fecha_apertura DATE NOT NULL,
+    fecha_cierre   DATE NULL
 ) ENGINE=InnoDB;
 
 
@@ -170,7 +181,8 @@ CREATE TABLE Comision (
     id_materia  INT NOT NULL,
     id_docente  INT NOT NULL,
     id_aula     INT NOT NULL,
-    id_periodo  INT NOT NULL,
+    id_periodo  INT NOT NULL,                        -- cuatrimestre (1er/2do)
+    id_ciclo    INT NOT NULL,                        -- anio academico (ciclo lectivo)
     dia         VARCHAR(10) NOT NULL,                -- Lunes, Martes...
     hora_inicio TIME NOT NULL,
     hora_fin    TIME NOT NULL,
@@ -179,7 +191,8 @@ CREATE TABLE Comision (
     CONSTRAINT fk_comision_materia FOREIGN KEY (id_materia) REFERENCES Materia(id_materia),
     CONSTRAINT fk_comision_docente FOREIGN KEY (id_docente) REFERENCES Docente(id_docente),
     CONSTRAINT fk_comision_aula    FOREIGN KEY (id_aula)    REFERENCES Aula(id_aula),
-    CONSTRAINT fk_comision_periodo FOREIGN KEY (id_periodo) REFERENCES PeriodoLectivo(id_periodo)
+    CONSTRAINT fk_comision_periodo FOREIGN KEY (id_periodo) REFERENCES PeriodoLectivo(id_periodo),
+    CONSTRAINT fk_comision_ciclo   FOREIGN KEY (id_ciclo)   REFERENCES CicloLectivo(id_ciclo)
 ) ENGINE=InnoDB;
 
 -- (11) Acta: historial de notas del alumno. Una nota por tipo (parcial/final) por materia.
@@ -365,6 +378,7 @@ BEGIN
     DECLARE v_faltan        INT;
     DECLARE v_solapadas     INT;
     DECLARE v_materia_falta VARCHAR(80);
+    DECLARE v_ciclo_estado  VARCHAR(10);
 
     -- MANEJADOR DE ERRORES: si algo falla dentro de la transaccion, se revierte
     -- todo (ROLLBACK) y se relanza el error (RESIGNAL) para que PHP lo capture.
@@ -374,14 +388,22 @@ BEGIN
         RESIGNAL;
     END;
 
-    -- Traemos los datos de la comision destino (materia, aula, dia, horario y su cupo).
+    -- Traemos los datos de la comision destino (materia, aula, dia, horario, cupo
+    -- y el estado del ciclo lectivo al que pertenece).
     SELECT c.id_materia, c.id_aula, c.dia, c.hora_inicio, c.hora_fin,
-           a.cupo_maximo
+           a.cupo_maximo, cl.estado
       INTO v_id_materia, v_id_aula, v_dia, v_hora_inicio, v_hora_fin,
-           v_cupo_maximo
+           v_cupo_maximo, v_ciclo_estado
     FROM Comision c
-    JOIN Aula a ON a.id_aula = c.id_aula
+    JOIN Aula a          ON a.id_aula   = c.id_aula
+    JOIN CicloLectivo cl ON cl.id_ciclo = c.id_ciclo
     WHERE c.id_comision = p_id_comision;
+
+    -- No se puede inscribir en una comision de un ciclo lectivo CERRADO.
+    IF v_ciclo_estado <> 'ABIERTO' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'La comisión pertenece a un ciclo lectivo cerrado.';
+    END IF;
 
     -- ===== REGLA 1: CUPO FISICO DEL AULA =====
     -- Contamos inscriptos ACTIVOS; si ya se lleno, cortamos.
@@ -493,6 +515,47 @@ END //
 DELIMITER ;
 
 
+-- ==========================================================================
+--  [PROCEDIMIENTO: CerrarCicloLectivo]   (CERRAR CICLO LECTIVO)
+--  Que hace:  cierra el ciclo lectivo ABIERTO (lo marca CERRADO con su fecha)
+--             y ABRE automaticamente el ciclo del anio siguiente. Todo atomico.
+--  Se llama desde:  clases/CicloLectivo.php -> cerrarCiclo()  (pantalla vistas/ciclos.php)
+-- ==========================================================================
+DELIMITER //
+CREATE PROCEDURE CerrarCicloLectivo ()
+COMMENT 'Cierra el ciclo lectivo abierto y abre el del anio siguiente. Se llama desde clases/CicloLectivo.php::cerrarCiclo()'
+BEGIN
+    DECLARE v_id   INT DEFAULT NULL;
+    DECLARE v_anio INT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    -- Buscamos el ciclo actualmente abierto.
+    SELECT id_ciclo, anio INTO v_id, v_anio
+    FROM CicloLectivo WHERE estado = 'ABIERTO' LIMIT 1;
+
+    IF v_id IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No hay un ciclo lectivo abierto para cerrar.';
+    END IF;
+
+    START TRANSACTION;
+        -- 1) Cerramos el ciclo actual.
+        UPDATE CicloLectivo
+        SET estado = 'CERRADO', fecha_cierre = CURDATE()
+        WHERE id_ciclo = v_id;
+
+        -- 2) Abrimos automaticamente el ciclo del anio siguiente.
+        INSERT INTO CicloLectivo (anio, estado, fecha_apertura)
+        VALUES (v_anio + 1, 'ABIERTO', CURDATE());
+    COMMIT;
+END //
+DELIMITER ;
+
+
 -- ############################################################################
 -- ##  [TRIGGERS]  (Tarea 4)                                                 ##
 -- ############################################################################
@@ -552,10 +615,12 @@ BEGIN
             SET MESSAGE_TEXT = 'La hora de inicio debe ser anterior a la hora de fin.';
     END IF;
 
-    -- Choque de AULA: misma aula, mismo dia, horarios que se pisan.
+    -- Choque de AULA: MISMO CICLO, misma aula, mismo dia, horarios que se pisan.
+    -- (Se limita al mismo ciclo lectivo: dos anios distintos pueden reutilizar aula/horario.)
     SELECT COUNT(*) INTO v_choque_aula
     FROM Comision
     WHERE activo = 1
+      AND id_ciclo = NEW.id_ciclo
       AND id_aula = NEW.id_aula
       AND dia = NEW.dia
       AND hora_inicio < NEW.hora_fin
@@ -566,10 +631,11 @@ BEGIN
             SET MESSAGE_TEXT = 'El aula ya está ocupada ese día y horario.';
     END IF;
 
-    -- Choque de DOCENTE: mismo docente, mismo dia, horarios que se pisan.
+    -- Choque de DOCENTE: MISMO CICLO, mismo docente, mismo dia, horarios que se pisan.
     SELECT COUNT(*) INTO v_choque_docente
     FROM Comision
     WHERE activo = 1
+      AND id_ciclo = NEW.id_ciclo
       AND id_docente = NEW.id_docente
       AND dia = NEW.dia
       AND hora_inicio < NEW.hora_fin
@@ -660,12 +726,15 @@ CREATE OR REPLACE VIEW vista_comisiones_completas AS
         c.dia,
         c.hora_inicio,
         c.hora_fin,
-        p.nombre       AS periodo
+        p.nombre       AS periodo,
+        cl.anio        AS ciclo_anio,      -- anio del ciclo lectivo
+        cl.estado      AS ciclo_estado     -- ABIERTO / CERRADO
     FROM Comision c
     JOIN Materia        m ON m.id_materia = c.id_materia
     JOIN Docente        d ON d.id_docente = c.id_docente
     JOIN Aula           a ON a.id_aula    = c.id_aula
     JOIN PeriodoLectivo p ON p.id_periodo = c.id_periodo
+    JOIN CicloLectivo  cl ON cl.id_ciclo  = c.id_ciclo
     WHERE c.activo = 1;               -- solo comisiones activas
 
 
@@ -689,3 +758,11 @@ INSERT INTO Rol (nombre) VALUES
 INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol) VALUES
     ('Administrador', '10000000', 'admin@academisys.edu',
      '$2y$12$BEvH4QXhB8RkmRlk0ATBOemu0Ob/npbZ1Ko0x7i/cxiadK3AzFu9a', 1);
+
+-- Cuatrimestres (genericos) y ciclo lectivo actual (abierto), para poder crear
+-- comisiones apenas se instala. Al cerrar este ciclo se abre el siguiente.
+INSERT INTO PeriodoLectivo (nombre) VALUES
+    ('1er Cuatrimestre'),
+    ('2do Cuatrimestre');
+INSERT INTO CicloLectivo (anio, estado, fecha_apertura) VALUES
+    (2025, 'ABIERTO', '2025-03-10');
