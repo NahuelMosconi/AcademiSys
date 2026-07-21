@@ -74,6 +74,11 @@ class Comision
     public function crear(int $idMateria, int $idDocente, int $idAula, int $idPeriodo,
                           string $dia, string $horaInicio, string $horaFin): array
     {
+        // Chequeo previo de coherencia horaria (mensaje amable, sin tocar la base).
+        // Las horas vienen como "HH:MM" (input type=time), comparables como texto.
+        if ($horaInicio >= $horaFin) {
+            return [false, 'La hora de inicio debe ser anterior a la hora de fin.'];
+        }
         try {
             // Las vacantes arrancan en el cupo del aula elegida.
             $cupo = $this->db->prepare("SELECT cupo_maximo FROM Aula WHERE id_aula = :a");
@@ -95,6 +100,9 @@ class Comision
         } catch (PDOException $e) {
             $msg = $e->getMessage();
             // El trigger tr_validar_comision lanza estos mensajes
+            if (strpos($msg, 'inicio debe ser anterior') !== false) {
+                return [false, 'La hora de inicio debe ser anterior a la hora de fin.'];
+            }
             if (strpos($msg, 'aula ya') !== false) {
                 return [false, 'El aula ya está ocupada ese día y horario.'];
             }

@@ -483,7 +483,8 @@ DELIMITER ;
 -- ==========================================================================
 --  [TRIGGER: tr_validar_comision]   (VALIDAR COMISION)
 --  Cuando:  ANTES de insertar una fila en Comision (BEFORE INSERT).
---  Que hace: evita crear dos comisiones que se pisen. Corta (SIGNAL) si:
+--  Que hace: valida la comision antes de crearla. Corta (SIGNAL) si:
+--     - la hora de INICIO no es anterior a la de FIN (ej. 19:30-19:00), o
 --     - la MISMA AULA ya esta ocupada ese dia/horario, o
 --     - el MISMO DOCENTE ya da otra clase ese dia/horario.
 --  Se dispara solo:  al crear una comision (clases/Comision.php -> crear(),
@@ -497,6 +498,13 @@ FOR EACH ROW
 BEGIN
     DECLARE v_choque_aula    INT;
     DECLARE v_choque_docente INT;
+
+    -- Coherencia horaria: la hora de inicio debe ser anterior a la de fin
+    -- (evita comisiones tipo 19:30-19:00).
+    IF NEW.hora_inicio >= NEW.hora_fin THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'La hora de inicio debe ser anterior a la hora de fin.';
+    END IF;
 
     -- Choque de AULA: misma aula, mismo dia, horarios que se pisan.
     SELECT COUNT(*) INTO v_choque_aula
