@@ -19,6 +19,7 @@ class Inscripcion
      */
     public function listar(string $filtro = ''): array
     {
+        // ===== [USA VISTA SQL: vista_inscripciones] ===== (definida en sql/01_estructura.sql)
         $sql = "SELECT * FROM vista_inscripciones ";
         if ($filtro !== '') {
             $sql .= "WHERE alumno LIKE :f1 OR legajo LIKE :f2 OR materia LIKE :f3 OR estado LIKE :f4 ";
@@ -98,6 +99,9 @@ class Inscripcion
     public function inscribir(int $idAlumno, int $idComision, string $ip): array
     {
         try {
+            // ===== [USA PROCEDIMIENTO ALMACENADO: InscribirAlumno] =====
+            // El "motor": valida cupo/correlativas/solapamiento y hace la
+            // transacción ACID. Definido en sql/01_estructura.sql.
             $stmt = $this->db->prepare("CALL InscribirAlumno(:a, :c, :ip)");
             $stmt->execute(['a' => $idAlumno, 'c' => $idComision, 'ip' => $ip]);
             return [true, 'Inscripción confirmada correctamente.'];
@@ -126,6 +130,8 @@ class Inscripcion
     public function anular(int $idInscripcion): array
     {
         try {
+            // ===== [USA PROCEDIMIENTO ALMACENADO: AnularInscripcion] =====
+            // Baja lógica (marca 'ANULADA') y devuelve la vacante. sql/01_estructura.sql.
             $stmt = $this->db->prepare("CALL AnularInscripcion(:id)");
             $stmt->execute(['id' => $idInscripcion]);
             return [true, 'Inscripción anulada (baja lógica).'];

@@ -14,6 +14,7 @@ class Comision
      */
     public function listar(string $filtro = ''): array
     {
+        // ===== [USA VISTA SQL: vista_comisiones_completas] ===== (definida en sql/01_estructura.sql)
         $sql = "SELECT * FROM vista_comisiones_completas ";
         if ($filtro !== '') {
             $sql .= "WHERE materia LIKE :f1 OR docente LIKE :f2 OR aula LIKE :f3 OR dia LIKE :f4 ";
@@ -79,6 +80,10 @@ class Comision
             $cupo->execute(['a' => $idAula]);
             $vacantes = (int) $cupo->fetchColumn();
 
+            // ===== [DISPARA TRIGGER: tr_validar_comision] =====
+            // Este INSERT activa el trigger BEFORE INSERT que valida que no se
+            // pisen aula ni docente (sql/01_estructura.sql). Si chocan, lanza error
+            // y cae en el catch de abajo.
             $stmt = $this->db->prepare(
                 "INSERT INTO Comision (id_materia, id_docente, id_aula, id_periodo,
                                        dia, hora_inicio, hora_fin, vacantes_disponibles)

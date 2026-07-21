@@ -18,6 +18,7 @@ class Acta
      */
     public function listar(string $filtro = ''): array
     {
+        // ===== [USA VISTA SQL: vista_notas_alumnos] ===== (definida en sql/01_estructura.sql)
         $sql = "SELECT * FROM vista_notas_alumnos ";
         if ($filtro !== '') {
             $stmt = $this->db->prepare($sql .
@@ -67,6 +68,7 @@ class Acta
      */
     public function listarPorAlumno(int $idAlumno): array
     {
+        // ===== [USA VISTA SQL: vista_notas_alumnos] ===== (filtrada por id_alumno)
         $stmt = $this->db->prepare(
             "SELECT materia, tipo, nota_final, fecha
              FROM vista_notas_alumnos
@@ -121,6 +123,8 @@ class Acta
     public function registrar(int $idAlumno, int $idMateria, string $tipo, float $nota): array
     {
         try {
+            // ===== [USA PROCEDIMIENTO ALMACENADO: RegistrarNota] =====
+            // Valida 0-10 e inserta en Acta (eso dispara el trigger tr_auditar_nota).
             $stmt = $this->db->prepare("CALL RegistrarNota(:a, :m, :t, :n)");
             $stmt->execute(['a'=>$idAlumno, 'm'=>$idMateria, 't'=>$tipo, 'n'=>$nota]);
             return [true, 'Nota registrada correctamente.'];

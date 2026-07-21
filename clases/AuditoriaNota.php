@@ -15,6 +15,8 @@ class AuditoriaNota
     /** READ — Lista las últimas notas auditadas, con nombre de alumno y materia. */
     public function listar(): array
     {
+        // ===== [LEE la tabla que llena el TRIGGER: tr_auditar_nota] =====
+        // AuditoriaNota se completa sola cada vez que se inserta una nota en Acta.
         return $this->db->query(
             "SELECT an.id_auditoria, al.nombre AS alumno, m.nombre AS materia,
                     an.nota, an.fecha_registro
