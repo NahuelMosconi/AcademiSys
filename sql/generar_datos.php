@@ -3,7 +3,7 @@
  * Generador de sql/02_datos.sql — datos de la Universidad Champagnat (UCh).
  *
  * Carga 7 carreras reales con su PLAN DE ESTUDIOS (materias y correlativas)
- * transcripto de los PDFs oficiales de uch.edu.ar, y una demo coherente
+ * (materias y correlativas) y una demo coherente
  * (docentes, alumnos, comisiones, inscripciones y notas) para poder probar el
  * sistema. Cada docente y alumno viene con su cuenta de acceso (login = DNI).
  *
@@ -23,7 +23,7 @@ function slug(string $s): string {
 }
 
 // ============================================================================
-//  PLANES DE ESTUDIO (transcriptos de los PDF oficiales de la UCh)
+//  PLANES DE ESTUDIO (carreras con sus materias y correlativas)
 //  materia = [codigo, nombre, anio, [codigos_correlativas]]
 // ============================================================================
 $planes = [
@@ -183,20 +183,31 @@ $planes = [
 $aulas = [[1,'Aula 101',40],[2,'Aula 102',40],[3,'Aula 103',35],
           [4,'Laboratorio A',30],[5,'Laboratorio B',30],[6,'Aula Magna',60]];
 $periodos = [[1,'1er Cuatrimestre 2025',2025],[2,'2do Cuatrimestre 2025',2025]];
-$docentesNombres = ['Laura Gómez','Martín Pérez','Ana Torres','Diego Fernández','Sofía Ramírez',
-  'Javier López','Carolina Díaz','Pablo Martínez','Valeria Ruiz','Gustavo Sosa','Marina Ortiz','Hernán Castro'];
-$alumnosNombres = ['Rodrigo Ramírez','Camila Suárez','Lucas Molina','Valentina Ríos','Mateo Castro',
-  'Julieta Herrera','Tomás Aguirre','Florencia Vega','Nicolás Medina','Agustina Rojas','Franco Domínguez',
-  'Martina Silva','Bruno Sosa','Carla Núñez'];
+// Pools de nombres/apellidos para generar muchas personas variadas y funcionales.
+$nombresPool = ['Rodrigo','Camila','Lucas','Valentina','Mateo','Julieta','Tomás','Florencia','Nicolás',
+  'Agustina','Franco','Martina','Bruno','Carla','Lautaro','Sofía','Benjamín','Delfina','Thiago','Catalina',
+  'Joaquín','Emma','Bautista','Renata','Santiago','Isabella','Facundo','Guadalupe','Ignacio','Victoria',
+  'Gonzalo','Abril','Ramiro','Josefina','Enzo','Malena','Dylan','Lucía','Álvaro','Paz','Máximo','Olivia',
+  'Simón','Amparo','Gael','Zoe','Ciro','Pilar','Elías','Mora'];
+$apellidosPool = ['Gómez','Pérez','Torres','Fernández','Ramírez','López','Díaz','Martínez','Ruiz','Sosa',
+  'Ortiz','Castro','Romero','Silva','Núñez','Molina','Ríos','Herrera','Aguirre','Vega','Medina','Rojas',
+  'Domínguez','Suárez','Flores','Acosta','Benítez','Cabrera','Ledesma','Ferreyra','Godoy','Ponce','Vera',
+  'Bustos','Correa','Peralta','Quiroga','Miranda','Cardozo','Luna','Ibáñez','Navarro','Campos','Ávila',
+  'Cáceres','Maldonado','Figueroa','Villalba','Ojeda','Pereyra'];
+function nombreDe(int $i, array $n, array $a): string {
+    return $n[$i % count($n)] . ' ' . $a[($i * 7 + 3) % count($a)];
+}
+$NUM_DOCENTES = 20;          // profesores
+$ALUMNOS_POR_CARRERA = 7;    // 7 x 7 carreras = 49 alumnos
 $dias = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
 $slots = [['08:00','10:00'],['10:00','12:00'],['14:00','16:00'],['16:00','18:00'],['18:00','20:00'],['20:00','22:00']];
 
 // ---- construir ids globales de materias: idg[$carreraIdx][$codigo] = id ----
 $out = [];
 $out[] = "-- ============================================================";
-$out[] = "--  ACADEMISYS - Datos Universidad Champagnat (UCh)";
+$out[] = "--  ACADEMISYS - Datos de ejemplo";
 $out[] = "--  Ejecutar DESPUÉS de sql/01_estructura.sql.";
-$out[] = "--  7 carreras con su PLAN DE ESTUDIOS real (materias + correlativas)";
+$out[] = "--  7 carreras con su PLAN DE ESTUDIOS (materias + correlativas)";
 $out[] = "--  y una demo (docentes, alumnos, comisiones, notas) para probar.";
 $out[] = "--  Generado por sql/generar_datos.php (hashes bcrypt reales del DNI).";
 $out[] = "-- ============================================================";
@@ -210,7 +221,7 @@ $out[] = "SET @rol_alu  = (SELECT id_rol FROM Rol WHERE nombre = 'Alumno');";
 $out[] = "";
 
 // Carreras
-$out[] = "-- ---------- Carreras (UCh) ----------";
+$out[] = "-- ---------- Carreras ----------";
 $carreraIdx = 0; $carreraIds = [];
 foreach ($planes as $nombre => $p) {
     $carreraIdx++;
@@ -267,28 +278,29 @@ $out[] = "";
 // Docentes + usuarios
 $out[] = "-- ---------- Docentes + cuenta de acceso (rol Profesor) ----------";
 $docIds = [];
-foreach ($docentesNombres as $i => $nombre) {
+for ($i = 0; $i < $NUM_DOCENTES; $i++) {
     $id = $i + 1; $docIds[] = $id;
+    $nombre = nombreDe($i, $nombresPool, $apellidosPool);
     $dni = (string)(20000000 + $id);
-    $email = slug($nombre).'@uch.edu.ar';
+    $email = slug($nombre).$id.'@academisys.edu';
     $out[] = "INSERT INTO Docente (id_docente, nombre, dni, email) VALUES ($id, ".q($nombre).", ".q($dni).", ".q($email).");";
     $out[] = "INSERT INTO Usuario (nombre, dni, email, password_hash, id_rol, id_docente) VALUES ("
            . q($nombre).", ".q($dni).", ".q($email).", ".q(hash_dni($dni)).", @rol_prof, $id);";
 }
 $out[] = "";
 
-// Alumnos (2 por carrera) + usuarios
+// Alumnos (varios por carrera) + usuarios
 $out[] = "-- ---------- Alumnos + cuenta de acceso (rol Alumno) ----------";
 $aluId = 0; $alumnosPorCarrera = [];
 $an = 0;
 foreach ($planes as $nombre => $p) {
     $cid = $carreraIds[$nombre];
-    for ($k = 0; $k < 2; $k++) {
-        $nombreAl = $alumnosNombres[$an % count($alumnosNombres)]; $an++;
+    for ($k = 0; $k < $ALUMNOS_POR_CARRERA; $k++) {
+        $nombreAl = nombreDe($an + $NUM_DOCENTES, $nombresPool, $apellidosPool); $an++;
         $aluId++;
         $dni = (string)(38000000 + $aluId);
         $legajo = sprintf('A2025%03d', $aluId);
-        $email = slug($nombreAl).$aluId.'@alumnos.uch.edu.ar';
+        $email = slug($nombreAl).$aluId.'@alumnos.academisys.edu';
         $tel = sprintf('261-400-%04d', $aluId);
         $out[] = "INSERT INTO Alumno (id_alumno, legajo, nombre, dni, telefono, email, id_carrera) VALUES ("
                . "$aluId, ".q($legajo).", ".q($nombreAl).", ".q($dni).", ".q($tel).", ".q($email).", $cid);";
@@ -299,25 +311,27 @@ foreach ($planes as $nombre => $p) {
 }
 $out[] = "";
 
-// Comisiones: para cada carrera, sus primeras materias de 1er año.
-// Cada comision toma un slot (dia,horario) GLOBALMENTE unico -> nunca se pisan
-// aula ni docente (respeta el trigger tr_validar_comision).
+// Comisiones: para cada carrera, TODAS sus materias de 1er año.
+// Programación sin choques: se recorre una lista de pares (día, horario). Si
+// varias comisiones caen en el mismo par, usan aulas y docentes DISTINTOS, así
+// nunca se pisan aula ni docente (respeta el trigger tr_validar_comision).
 $out[] = "-- ---------- Comisiones (materias de 1er año de cada carrera) ----------";
+$pares = [];
+foreach ($dias as $d) foreach ($slots as $s) $pares[] = [$d, $s];   // 5 x 6 = 30 pares
 $comIdx = 0; $comisionesPorCarrera = []; $comMateria = [];
-$ci = 0;
 foreach ($planes as $nombre => $p) {
-    $ci++; $cid = $carreraIds[$nombre];
-    $mats1 = array_slice(array_values(array_filter($p['mats'], fn($m)=>$m[2]===1)), 0, 4);
+    $cid = $carreraIds[$nombre];
+    $mats1 = array_values(array_filter($p['mats'], fn($m)=>$m[2]===1));   // todo 1er año
     foreach ($mats1 as $m) {
-        $slotDia = $dias[$comIdx % 5];
-        $slotHora = $slots[intdiv($comIdx, 5) % count($slots)];
-        $aula = $aulas[$comIdx % count($aulas)][0];
-        $cupo = $aulas[$comIdx % count($aulas)][2];
-        $doc = $docIds[$comIdx % count($docIds)];
+        $pairIdx = $comIdx % count($pares);
+        $occ     = intdiv($comIdx, count($pares));       // 0,1,2... comisiones en ese par
+        [$slotDia, $slotHora] = $pares[$pairIdx];
+        $aula = $aulas[$occ % count($aulas)];             // aula distinta por ocurrencia
+        $doc  = $docIds[($pairIdx * 3 + $occ) % count($docIds)];  // docente distinto en el par
         $comIdx++;
         $idMat = $idg[$cid][$m[0]];
         $out[] = "INSERT INTO Comision (id_comision, id_materia, id_docente, id_aula, id_periodo, dia, hora_inicio, hora_fin, vacantes_disponibles) VALUES ("
-               . "$comIdx, $idMat, $doc, $aula, 1, ".q($slotDia).", ".q($slotHora[0]).", ".q($slotHora[1]).", $cupo);";
+               . "$comIdx, $idMat, $doc, {$aula[0]}, 1, ".q($slotDia).", ".q($slotHora[0]).", ".q($slotHora[1]).", {$aula[2]});";
         $comisionesPorCarrera[$cid][] = $comIdx;
         $comMateria[$comIdx] = $idMat;
     }
@@ -346,24 +360,29 @@ foreach ($inscList as $x)
     $out[] = "INSERT INTO AuditoriaInscripcion (id_alumno, id_comision, ip_origen, fecha_registro) VALUES ({$x[0]}, {$x[1]}, '127.0.0.1', ".q($fecha).");";
 $out[] = "";
 
-// Notas: para el 1er alumno de cada carrera, cargamos notas en su 1ra materia
-// (promocion), y en la 2da (regular). Al 2do alumno, notas bajas (libre) en la 1ra.
-// Asi se ven todos los estados (Promocionada / Regular / Libre / Aprobada).
-$out[] = "-- ---------- Notas (Acta). Muestran los 4 estados del régimen UCh. ----------";
+// Notas: cargamos notas a los primeros alumnos de cada carrera para que se vean
+// los 4 estados (Promocionada / Regular / Aprobada / Libre). Sin Trabajos Prácticos.
+$out[] = "-- ---------- Notas (Acta). Muestran los 4 estados de las materias. ----------";
 $fnota = '2025-06-20';
 function acta(&$out,$al,$mat,$tipo,$nota,$f){ $out[]="INSERT INTO Acta (id_alumno, id_materia, tipo, nota_final, fecha) VALUES ($al, $mat, ".q($tipo).", ".number_format($nota,2,'.','').", ".q($f).");"; }
 foreach ($alumnosPorCarrera as $cid => $alus) {
     $coms = $comisionesPorCarrera[$cid] ?? [];
     if (count($coms) < 2) continue;
-    $al1 = $alus[0]; $al2 = $alus[1] ?? null;
     $matA = $comMateria[$coms[0]]; $matB = $comMateria[$coms[1]];
-    // alumno 1: promociona matA, regulariza matB
-    acta($out,$al1,$matA,'1er Parcial',8.00,$fnota); acta($out,$al1,$matA,'2do Parcial',9.00,$fnota); acta($out,$al1,$matA,'Trabajos Prácticos',8.00,$fnota);
-    acta($out,$al1,$matB,'1er Parcial',5.00,$fnota); acta($out,$al1,$matB,'2do Parcial',6.00,$fnota); acta($out,$al1,$matB,'Trabajos Prácticos',6.00,$fnota);
-    // alumno 2: libre en matA (parcial bajo) y aprobada por final en matB
-    if ($al2) {
-        acta($out,$al2,$matA,'1er Parcial',3.00,$fnota);
-        acta($out,$al2,$matB,'1er Parcial',6.00,$fnota); acta($out,$al2,$matB,'2do Parcial',7.00,$fnota); acta($out,$al2,$matB,'Trabajos Prácticos',7.00,$fnota); acta($out,$al2,$matB,'Final',8.00,'2025-07-25');
+    // Alumno 0: Promocionada en A (8 y 9), Regular en B (5 y 6).
+    if (isset($alus[0])) {
+        acta($out,$alus[0],$matA,'1er Parcial',8.00,$fnota); acta($out,$alus[0],$matA,'2do Parcial',9.00,$fnota);
+        acta($out,$alus[0],$matB,'1er Parcial',5.00,$fnota); acta($out,$alus[0],$matB,'2do Parcial',6.00,$fnota);
+    }
+    // Alumno 1: Libre en A (parcial bajo), Aprobada por final en B.
+    if (isset($alus[1])) {
+        acta($out,$alus[1],$matA,'1er Parcial',3.00,$fnota);
+        acta($out,$alus[1],$matB,'1er Parcial',6.00,$fnota); acta($out,$alus[1],$matB,'2do Parcial',7.00,$fnota);
+        acta($out,$alus[1],$matB,'Final',8.00,'2025-07-25');
+    }
+    // Alumno 2: Promocionada en A (7 y 8).
+    if (isset($alus[2])) {
+        acta($out,$alus[2],$matA,'1er Parcial',7.00,$fnota); acta($out,$alus[2],$matA,'2do Parcial',8.00,$fnota);
     }
 }
 $out[] = "";

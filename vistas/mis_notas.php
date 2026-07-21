@@ -12,9 +12,9 @@ require_once __DIR__ . '/../clases/Acta.php';
 $u = $_SESSION['usuario'];
 $actaModel = new Acta();
 $notas   = $actaModel->listarPorAlumno((int)$u['id_alumno']);
-$estados = $actaModel->estadoPorAlumno((int)$u['id_alumno']);   // régimen UCh
+$estados = $actaModel->estadoPorAlumno((int)$u['id_alumno']);   // estado por materia
 
-// Clase de color (badge) según el estado UCh de la materia.
+// Clase de color (badge) según el estado de la materia.
 function badgeEstado(string $e): string {
     switch ($e) {
         case 'Aprobada':     return 'badge-activa';
@@ -29,9 +29,11 @@ function badgeEstado(string $e): string {
 
 <?php if (!empty($estados)): ?>
 <h2>Estado de mis materias</h2>
-<p class="ayuda">Régimen UCh: <strong>Promocionada</strong> (promedio de parciales ≥ 7 + TP, sin final),
-   <strong>Regular</strong> (parciales y TP aprobados, debe rendir final),
-   <strong>Aprobada</strong> (final rendido) o <strong>Libre</strong>.</p>
+<p class="ayuda">
+   <strong>Promocionada</strong>: promedio de parciales ≥ 7 (aprueba sin rendir final) &nbsp;·&nbsp;
+   <strong>Regular</strong>: parciales aprobados, debe rendir final &nbsp;·&nbsp;
+   <strong>Aprobada</strong>: final rendido &nbsp;·&nbsp;
+   <strong>Libre</strong>: no cumple las condiciones.</p>
 <div class="tabla-wrap">
 <table class="tabla">
     <thead><tr><th>Materia</th><th>Estado</th></tr></thead>

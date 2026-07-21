@@ -7,16 +7,15 @@ class Acta
     private PDO $db;
     public function __construct() { $this->db = Database::conectar(); }
 
-    // Tipos de nota del régimen UCh. Los parciales (con sus recuperatorios) y los
-    // Trabajos Prácticos definen la regularidad/promoción; el Final aprueba la
-    // materia si no se promocionó. El estado resultante lo calcula, en la base,
-    // la función fn_estado_materia (ver sql/01_estructura.sql).
+    // Tipos de nota. Los parciales (con sus recuperatorios) definen la
+    // regularidad/promoción; el Final aprueba la materia si no se promocionó.
+    // El estado resultante lo calcula, en la base, la función fn_estado_materia
+    // (ver sql/01_estructura.sql).
     public const TIPOS = ['1er Parcial', 'Recup 1er Parcial',
-                          '2do Parcial', 'Recup 2do Parcial',
-                          'Trabajos Prácticos', 'Final'];
+                          '2do Parcial', 'Recup 2do Parcial', 'Final'];
 
     /**
-     * Estado de cada materia de un alumno según el régimen UCh
+     * Estado de cada materia de un alumno
      * (Aprobada / Promocionada / Regular / Libre), calculado por la función
      * SQL fn_estado_materia. Se usa en la pantalla "Mis notas" del alumno.
      * Devuelve filas: materia, estado.

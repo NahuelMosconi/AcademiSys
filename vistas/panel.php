@@ -21,7 +21,7 @@ if ($esAlumno && $u['id_alumno']):
     $al = (int)$u['id_alumno'];
     $misMaterias = (int)$db->query("SELECT COUNT(*) FROM Inscripcion WHERE id_alumno=$al AND estado='ACTIVA'")->fetchColumn();
     $misNotas = (int)$db->query("SELECT COUNT(*) FROM Acta WHERE id_alumno=$al")->fetchColumn();
-    // Materias aprobadas según el régimen UCh: por Final o por Promoción (usa fn_estado_materia).
+    // Materias aprobadas: por Final o por Promoción (usa fn_estado_materia).
     $finales = (int)$db->query("SELECT COUNT(*) FROM (SELECT DISTINCT id_materia FROM Acta WHERE id_alumno=$al) t
         WHERE fn_estado_materia($al, t.id_materia) COLLATE utf8mb4_unicode_ci IN ('Aprobada','Promocionada')")->fetchColumn();
     $carrera = $db->query("SELECT c.nombre FROM Alumno a JOIN Carrera c ON c.id_carrera=a.id_carrera WHERE a.id_alumno=$al")->fetchColumn();
