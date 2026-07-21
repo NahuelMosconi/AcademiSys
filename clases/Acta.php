@@ -7,9 +7,32 @@ class Acta
     private PDO $db;
     public function __construct() { $this->db = Database::conectar(); }
 
-    // Los tipos de nota válidos. El recuperatorio reemplaza un parcial.
-    public const TIPOS = ['1er Parcial', '2do Parcial', 'Final',
-                          'Recup 1er Parcial', 'Recup 2do Parcial'];
+    // Tipos de nota del régimen UCh. Los parciales (con sus recuperatorios) y los
+    // Trabajos Prácticos definen la regularidad/promoción; el Final aprueba la
+    // materia si no se promocionó. El estado resultante lo calcula, en la base,
+    // la función fn_estado_materia (ver sql/01_estructura.sql).
+    public const TIPOS = ['1er Parcial', 'Recup 1er Parcial',
+                          '2do Parcial', 'Recup 2do Parcial',
+                          'Trabajos Prácticos', 'Final'];
+
+    /**
+     * Estado de cada materia de un alumno según el régimen UCh
+     * (Aprobada / Promocionada / Regular / Libre), calculado por la función
+     * SQL fn_estado_materia. Se usa en la pantalla "Mis notas" del alumno.
+     * Devuelve filas: materia, estado.
+     */
+    public function estadoPorAlumno(int $idAlumno): array
+    {
+        // ===== [USA FUNCIÓN SQL: fn_estado_materia] ===== (sql/01_estructura.sql)
+        $stmt = $this->db->prepare(
+            "SELECT m.nombre AS materia,
+                    fn_estado_materia(:al, m.id_materia) AS estado
+             FROM (SELECT DISTINCT id_materia FROM Acta WHERE id_alumno = :al2) t
+             JOIN Materia m ON m.id_materia = t.id_materia
+             ORDER BY m.nombre");
+        $stmt->execute(['al' => $idAlumno, 'al2' => $idAlumno]);
+        return $stmt->fetchAll();
+    }
 
     /**
      * Lista actas (para el admin) usando la VISTA SQL vista_notas_alumnos, que ya

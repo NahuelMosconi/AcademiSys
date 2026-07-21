@@ -15,6 +15,7 @@
 --   [INDICE: idx_acta_alumno]            -> Acta(id_alumno)
 --   [INDICE: idx_insc_comision]          -> Inscripcion(id_comision)
 --   [INDICE: idx_alumno_nombre]          -> Alumno(nombre)
+--   [FUNCION: fn_estado_materia]         -> estado UCh (Aprobada/Promocionada/Regular/Libre)
 --   [PROCEDIMIENTO: RegistrarNota]       -> carga una nota (Acta)
 --   [PROCEDIMIENTO: InscribirAlumno]     -> MOTOR de inscripcion (3 reglas+ACID)
 --   [PROCEDIMIENTO: AnularInscripcion]   -> baja logica de inscripcion
@@ -247,6 +248,61 @@ CREATE INDEX idx_alumno_nombre ON Alumno(nombre);
 
 
 -- ############################################################################
+-- ##  [FUNCION: fn_estado_materia]   (ESTADO DE MATERIA - regimen UCh)      ##
+-- ############################################################################
+-- Una funcion almacenada devuelve UN valor. Esta calcula, para un alumno y una
+-- materia, el estado segun el regimen de la Universidad Champagnat:
+--   'Aprobada'     -> tiene Final >= 4 (o promociono).
+--   'Promocionada' -> ambos parciales (o sus recuperatorios) >= 4, Trabajos
+--                     Practicos >= 4 y PROMEDIO de parciales >= 7 (sin final).
+--   'Regular'      -> ambos parciales >= 4 y TP >= 4 (pero promedio < 7): puede
+--                     rendir final. (La regularidad en UCh dura 3 anios.)
+--   'Libre'        -> no cumple lo anterior.
+-- La usan: el motor de inscripcion (correlativas) y clases/Acta.php (mostrar estado).
+DELIMITER //
+CREATE FUNCTION fn_estado_materia(p_id_alumno INT, p_id_materia INT)
+    RETURNS VARCHAR(20)
+    DETERMINISTIC
+    READS SQL DATA
+    COMMENT 'Estado UCh de una materia para un alumno: Aprobada/Promocionada/Regular/Libre'
+BEGIN
+    DECLARE v_p1    DECIMAL(4,2);   -- mejor nota del 1er parcial (o su recuperatorio)
+    DECLARE v_p2    DECIMAL(4,2);   -- mejor nota del 2do parcial (o su recuperatorio)
+    DECLARE v_tp    DECIMAL(4,2);   -- nota de Trabajos Practicos
+    DECLARE v_final DECIMAL(4,2);   -- mejor nota de Final
+
+    SELECT MAX(nota_final) INTO v_p1 FROM Acta
+     WHERE id_alumno=p_id_alumno AND id_materia=p_id_materia
+       AND tipo IN ('1er Parcial','Recup 1er Parcial');
+    SELECT MAX(nota_final) INTO v_p2 FROM Acta
+     WHERE id_alumno=p_id_alumno AND id_materia=p_id_materia
+       AND tipo IN ('2do Parcial','Recup 2do Parcial');
+    SELECT MAX(nota_final) INTO v_tp FROM Acta
+     WHERE id_alumno=p_id_alumno AND id_materia=p_id_materia
+       AND tipo='Trabajos Prácticos';
+    SELECT MAX(nota_final) INTO v_final FROM Acta
+     WHERE id_alumno=p_id_alumno AND id_materia=p_id_materia AND tipo='Final';
+
+    -- Aprobada por examen final.
+    IF v_final IS NOT NULL AND v_final >= 4 THEN
+        RETURN 'Aprobada';
+    END IF;
+
+    -- Cursada aprobada (regular): dos parciales >= 4 y TP >= 4.
+    IF v_p1 >= 4 AND v_p2 >= 4 AND v_tp >= 4 THEN
+        IF (v_p1 + v_p2) / 2 >= 7 THEN
+            RETURN 'Promocionada';   -- promedio alto: no rinde final
+        ELSE
+            RETURN 'Regular';        -- regular: debe rendir final
+        END IF;
+    END IF;
+
+    RETURN 'Libre';
+END //
+DELIMITER ;
+
+
+-- ############################################################################
 -- ##  [PROCEDIMIENTOS ALMACENADOS]  (Tarea 4)                               ##
 -- ############################################################################
 -- Un procedimiento almacenado es codigo SQL guardado en la base con un nombre,
@@ -343,17 +399,15 @@ BEGIN
             SET MESSAGE_TEXT = 'No hay cupo: el aula está llena.';
     END IF;
 
-    -- ===== REGLA 2: CORRELATIVAS =====
-    -- Contamos cuantas materias previas requeridas NO tiene aprobadas
-    -- (aprobada = existe un Acta tipo 'Final' con nota_final >= 4).
+    -- ===== REGLA 2: CORRELATIVAS (regimen UCh) =====
+    -- Para CURSAR una materia hay que tener la correlativa REGULARIZADA, es decir
+    -- en estado Regular, Promocionada o Aprobada (lo calcula fn_estado_materia).
+    -- Contamos cuantas previas requeridas NO estan regularizadas.
     SELECT COUNT(*) INTO v_faltan
     FROM Correlativa co
     WHERE co.id_materia = v_id_materia
-      AND co.id_materia_previa NOT IN (
-          SELECT ac.id_materia FROM Acta ac
-          WHERE ac.id_alumno = p_id_alumno
-            AND ac.tipo = 'Final' AND ac.nota_final >= 4
-      );
+      AND fn_estado_materia(p_id_alumno, co.id_materia_previa) COLLATE utf8mb4_unicode_ci
+          NOT IN ('Regular','Promocionada','Aprobada');
 
     IF v_faltan > 0 THEN
         -- Buscamos el nombre de UNA materia que le falta, para el mensaje de error.
@@ -361,11 +415,8 @@ BEGIN
         FROM Correlativa co
         JOIN Materia m ON m.id_materia = co.id_materia_previa
         WHERE co.id_materia = v_id_materia
-          AND co.id_materia_previa NOT IN (
-              SELECT ac.id_materia FROM Acta ac
-              WHERE ac.id_alumno = p_id_alumno
-                AND ac.tipo = 'Final' AND ac.nota_final >= 4
-          )
+          AND fn_estado_materia(p_id_alumno, co.id_materia_previa) COLLATE utf8mb4_unicode_ci
+              NOT IN ('Regular','Promocionada','Aprobada')
         LIMIT 1;
 
         SIGNAL SQLSTATE '45000'

@@ -197,11 +197,13 @@ button:active { transform: translateY(1px); }
 .fila-anulada { opacity: 0.5; }
 
 /* ===================== BADGES ===================== */
-.badge-activa, .badge-anulada {
+.badge-activa, .badge-anulada, .badge-promocion, .badge-regular {
     padding: 4px 12px; border-radius: 20px; font-size: 0.76em; font-weight: 700; display: inline-block;
 }
 .badge-activa { background: var(--verde-bg); color: var(--verde); }
 .badge-anulada { background: var(--rojo-bg); color: var(--rojo); }
+.badge-promocion { background: var(--indigo-100); color: var(--indigo-osc); }  /* Promocionada */
+.badge-regular { background: var(--ambar-bg); color: var(--ambar); }           /* Regular */
 
 /* ===================== AVISOS ===================== */
 .aviso { padding: 13px 16px; border-radius: 12px; margin-bottom: 20px; font-size: 0.9em; font-weight: 500;
