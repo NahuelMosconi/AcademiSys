@@ -244,14 +244,14 @@ $out[] = "";
 // Ciclos lectivos: el 2025 (ABIERTO) y los cuatrimestres ya vienen de
 // sql/01_estructura.sql. Acá agregamos dos ciclos ANTERIORES (cerrados) y
 // resolvemos los ids por año/nombre en variables de sesión.
-$out[] = "-- ---------- Ciclos lectivos anteriores (cerrados) ----------";
+$out[] = "-- ---------- Ciclos lectivos anteriores (cerrados; el 2026 abierto viene de 01) ----------";
 $out[] = "INSERT INTO CicloLectivo (anio, estado, fecha_apertura, fecha_cierre) VALUES";
-$out[] = "    (2023, 'CERRADO', '2023-03-13', '2023-12-15'),";
-$out[] = "    (2024, 'CERRADO', '2024-03-11', '2024-12-13');";
+$out[] = "    (2024, 'CERRADO', '2024-03-11', '2024-12-13'),";
+$out[] = "    (2025, 'CERRADO', '2025-03-10', '2025-12-12');";
 $out[] = "SET @per1  = (SELECT id_periodo FROM PeriodoLectivo WHERE nombre = '1er Cuatrimestre');";
-$out[] = "SET @c2023 = (SELECT id_ciclo FROM CicloLectivo WHERE anio = 2023);";
 $out[] = "SET @c2024 = (SELECT id_ciclo FROM CicloLectivo WHERE anio = 2024);";
 $out[] = "SET @c2025 = (SELECT id_ciclo FROM CicloLectivo WHERE anio = 2025);";
+$out[] = "SET @c2026 = (SELECT id_ciclo FROM CicloLectivo WHERE anio = 2026);";
 $out[] = "";
 
 // Materias (ids globales) + mapa codigo->id por carrera
@@ -340,7 +340,7 @@ $out[] = "";
 $pares = [];
 foreach ($dias as $d) foreach ($slots as $s) $pares[] = [$d, $s];   // 30 pares (día,horario)
 $NMAT = [1=>3, 2=>2, 3=>2];                                          // comisiones por año
-$aniosPorCiclo = ['@c2025'=>[1,2,3], '@c2024'=>[1,2], '@c2023'=>[1]];
+$aniosPorCiclo = ['@c2026'=>[1,2,3], '@c2025'=>[1,2], '@c2024'=>[1]];
 function matsAnio(array $mats, int $anio, int $n): array {
     return array_slice(array_values(array_filter($mats, fn($m)=>$m[2]===$anio)), 0, $n);
 }
@@ -380,13 +380,13 @@ $cohortes = [];
 foreach ($alumnosPorCarrera as $cid => $alus) {
     $ing = array_slice($alus,0,3); $int = array_slice($alus,3,2); $avz = array_slice($alus,5,2);
     $cohortes[$cid] = ['ing'=>$ing,'int'=>$int,'avz'=>$avz];
-    $c25 = $com[$cid]['@c2025'] ?? []; $c24 = $com[$cid]['@c2024'] ?? []; $c23 = $com[$cid]['@c2023'] ?? [];
-    foreach ($ing as $al) inscribir($out,$inscList,$al, $c25[1] ?? [], '2025-03-10 09:00:00');
-    foreach ($int as $al){ inscribir($out,$inscList,$al, $c24[1] ?? [], '2024-03-11 09:00:00');
-                           inscribir($out,$inscList,$al, $c25[2] ?? [], '2025-03-10 09:00:00'); }
-    foreach ($avz as $al){ inscribir($out,$inscList,$al, $c23[1] ?? [], '2023-03-13 09:00:00');
-                           inscribir($out,$inscList,$al, $c24[2] ?? [], '2024-03-11 09:00:00');
-                           inscribir($out,$inscList,$al, $c25[3] ?? [], '2025-03-10 09:00:00'); }
+    $c26 = $com[$cid]['@c2026'] ?? []; $c25 = $com[$cid]['@c2025'] ?? []; $c24 = $com[$cid]['@c2024'] ?? [];
+    foreach ($ing as $al) inscribir($out,$inscList,$al, $c26[1] ?? [], '2026-03-09 09:00:00');
+    foreach ($int as $al){ inscribir($out,$inscList,$al, $c25[1] ?? [], '2025-03-10 09:00:00');
+                           inscribir($out,$inscList,$al, $c26[2] ?? [], '2026-03-09 09:00:00'); }
+    foreach ($avz as $al){ inscribir($out,$inscList,$al, $c24[1] ?? [], '2024-03-11 09:00:00');
+                           inscribir($out,$inscList,$al, $c25[2] ?? [], '2025-03-10 09:00:00');
+                           inscribir($out,$inscList,$al, $c26[3] ?? [], '2026-03-09 09:00:00'); }
 }
 $out[] = "";
 $out[] = "-- Recalcular vacantes segun inscriptos activos.";
@@ -404,21 +404,21 @@ $out[] = "-- ---------- Notas (Acta): historial que marca la etapa de cada alumn
 function acta(&$out,$al,$mat,$tipo,$nota,$f){ $out[]="INSERT INTO Acta (id_alumno, id_materia, tipo, nota_final, fecha) VALUES ($al, $mat, ".q($tipo).", ".number_format($nota,2,'.','').", ".q($f).");"; }
 function matsDe($coms,$comMateria){ return array_map(fn($c)=>$comMateria[$c], $coms); }
 foreach ($cohortes as $cid => $co) {
-    $c25 = $com[$cid]['@c2025'] ?? []; $c24 = $com[$cid]['@c2024'] ?? []; $c23 = $com[$cid]['@c2023'] ?? [];
-    // Intermedios: aprobaron (Final) las materias de 1° cursadas en 2024.
+    $c26 = $com[$cid]['@c2026'] ?? []; $c25 = $com[$cid]['@c2025'] ?? []; $c24 = $com[$cid]['@c2024'] ?? [];
+    // Intermedios: aprobaron (Final) las materias de 1° cursadas en 2025.
     foreach ($co['int'] as $al)
-        foreach (matsDe($c24[1] ?? [], $comMateria) as $mat) acta($out,$al,$mat,'Final',7.00,'2024-11-20');
-    // Avanzados: aprobaron 1° (2023) y 2° (2024).
+        foreach (matsDe($c25[1] ?? [], $comMateria) as $mat) acta($out,$al,$mat,'Final',7.00,'2025-11-20');
+    // Avanzados: aprobaron 1° (2024) y 2° (2025).
     foreach ($co['avz'] as $al){
-        foreach (matsDe($c23[1] ?? [], $comMateria) as $mat) acta($out,$al,$mat,'Final',8.00,'2023-11-22');
-        foreach (matsDe($c24[2] ?? [], $comMateria) as $mat) acta($out,$al,$mat,'Final',7.00,'2024-11-20');
+        foreach (matsDe($c24[1] ?? [], $comMateria) as $mat) acta($out,$al,$mat,'Final',8.00,'2024-11-22');
+        foreach (matsDe($c25[2] ?? [], $comMateria) as $mat) acta($out,$al,$mat,'Final',7.00,'2025-11-20');
     }
-    // Ingresantes: notas del ciclo actual (2025) en su 1ra materia de 1°, variadas.
-    $m1 = isset($c25[1][0]) ? $comMateria[$c25[1][0]] : null;
+    // Ingresantes: notas del ciclo actual (2026) en su 1ra materia de 1°, variadas.
+    $m1 = isset($c26[1][0]) ? $comMateria[$c26[1][0]] : null;
     if ($m1 !== null) {
-        if (isset($co['ing'][0])) { acta($out,$co['ing'][0],$m1,'1er Parcial',8.00,'2025-06-20'); acta($out,$co['ing'][0],$m1,'2do Parcial',9.00,'2025-06-25'); }
-        if (isset($co['ing'][1])) { acta($out,$co['ing'][1],$m1,'1er Parcial',5.00,'2025-06-20'); acta($out,$co['ing'][1],$m1,'2do Parcial',6.00,'2025-06-25'); }
-        if (isset($co['ing'][2])) { acta($out,$co['ing'][2],$m1,'1er Parcial',3.00,'2025-06-20'); }
+        if (isset($co['ing'][0])) { acta($out,$co['ing'][0],$m1,'1er Parcial',8.00,'2026-06-19'); acta($out,$co['ing'][0],$m1,'2do Parcial',9.00,'2026-06-24'); }
+        if (isset($co['ing'][1])) { acta($out,$co['ing'][1],$m1,'1er Parcial',5.00,'2026-06-19'); acta($out,$co['ing'][1],$m1,'2do Parcial',6.00,'2026-06-24'); }
+        if (isset($co['ing'][2])) { acta($out,$co['ing'][2],$m1,'1er Parcial',3.00,'2026-06-19'); }
     }
 }
 $out[] = "";

@@ -765,4 +765,4 @@ INSERT INTO PeriodoLectivo (nombre) VALUES
     ('1er Cuatrimestre'),
     ('2do Cuatrimestre');
 INSERT INTO CicloLectivo (anio, estado, fecha_apertura) VALUES
-    (2025, 'ABIERTO', '2025-03-10');
+    (2026, 'ABIERTO', '2026-03-09');
